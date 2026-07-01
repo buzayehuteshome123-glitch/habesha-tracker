@@ -1,0 +1,6 @@
+{
+  "name": "Habesha Tracker",
+  "description": "Comprehensive ERP suite for Ethiopian SMBs supporting multi-currency, Amharic/English localizations, inventory, sales, expenses, and credit tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
