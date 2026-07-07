@@ -716,7 +716,7 @@ export default function LandingPage({
             {/* Account CTA Group */}
             <button 
               onClick={handleLogin}
-              className="hidden sm:inline-flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition py-2 px-3"
+              className="inline-flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition py-2 px-3"
               id="btn-login"
             >
               {t.nav.logIn}
