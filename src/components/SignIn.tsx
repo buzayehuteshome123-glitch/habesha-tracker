@@ -166,11 +166,25 @@ export default function SignIn({
       setErrorMsg(isAmharic ? 'እባክዎ ኢሜልዎን ያስገቡ።' : 'Please enter your email address.');
       return;
     }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setErrorMsg(isAmharic 
+        ? 'እባክዎ ትክክለኛ የኢሜል አድራሻ ያስገቡ።' 
+        : 'Please enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
     try {
+      const redirectUrl = window.location.origin.includes('localhost') || window.location.origin.includes('run.app')
+        ? `${window.location.origin}/reset-password`
+        : 'https://habeshatracker.com/reset-password';
+
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
       });
       if (error) {
         setErrorMsg(getFriendlyErrorMessage(error));
@@ -341,8 +355,8 @@ export default function SignIn({
                   </p>
                   <p className="leading-relaxed opacity-90">
                     {isAmharic 
-                      ? 'የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ልከናል። እባክዎ ኢሜልዎን ይፈትሹ።' 
-                      : 'Please check your email inbox for a link to reset your account password.'}
+                      ? 'የይለፍ ቃል መለወጫ ሊንክ ወደ ኢሜልዎ ተልኳል።' 
+                      : 'A password reset link has been sent to your email.'}
                   </p>
                 </div>
               </motion.div>

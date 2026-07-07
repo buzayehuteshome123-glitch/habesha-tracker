@@ -13,6 +13,7 @@ import SignIn from './components/SignIn';
 import SignUp from './components/SignUp';
 import ProfileSetup from './components/ProfileSetup';
 import DatabaseSetupGuide from './components/DatabaseSetupGuide';
+import ResetPassword from './components/ResetPassword';
 import { supabase } from './lib/supabase';
 
 import { 
@@ -103,7 +104,21 @@ export default function App() {
 
   // Navigation routing tab
   const [currentTab, setCurrentTab] = useState<any>('dashboard');
-  const [authScreen, setAuthScreen] = useState<'landing' | 'signin' | 'signup' | 'app'>('landing');
+  const [authScreen, setAuthScreen] = useState<'landing' | 'signin' | 'signup' | 'app' | 'reset-password'>(() => {
+    try {
+      if (
+        window.location.pathname === '/reset-password' || 
+        window.location.hash.includes('type=recovery') || 
+        window.location.search.includes('type=recovery') ||
+        (window.location.hash.includes('access_token=') && window.location.hash.includes('type=recovery'))
+      ) {
+        return 'reset-password';
+      }
+    } catch (e) {
+      // ignore
+    }
+    return 'landing';
+  });
   const [signupPrefillEmail, setSignupPrefillEmail] = useState<string>('');
   const [signupSuccess, setSignupSuccess] = useState<boolean>(false);
 
@@ -142,7 +157,21 @@ export default function App() {
   // Supabase Auth Session listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+      const isRecovery = window.location.pathname === '/reset-password' || 
+                         window.location.hash.includes('type=recovery') || 
+                         window.location.search.includes('type=recovery') ||
+                         (window.location.hash.includes('access_token=') && window.location.hash.includes('type=recovery'));
+
+      if (isRecovery) {
+        setAuthScreen('reset-password');
+        setOfflineMode(false);
+        try {
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch (e) {
+          // ignore
+        }
+      } else if (session) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
         setAuthScreen('app');
@@ -156,23 +185,30 @@ export default function App() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        setUserId(session.user.id);
-        setUserEmail(session.user.email || '');
-        setAuthScreen('app');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthScreen('reset-password');
         setOfflineMode(false);
+      } else if (session) {
+        if (authScreen !== 'reset-password') {
+          setUserId(session.user.id);
+          setUserEmail(session.user.email || '');
+          setAuthScreen('app');
+          setOfflineMode(false);
+        }
       } else {
-        setUserId(null);
-        setUserEmail('');
-        setSetupRequired(false);
-        setAuthScreen('landing');
-        setOfflineMode(false);
+        if (authScreen !== 'reset-password') {
+          setUserId(null);
+          setUserEmail('');
+          setSetupRequired(false);
+          setAuthScreen('landing');
+          setOfflineMode(false);
+        }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [authScreen]);
 
   // Automatic inactivity logout mechanism (15 minutes default)
   useEffect(() => {
@@ -920,6 +956,21 @@ export default function App() {
         }}
         onBack={() => setAuthScreen('landing')}
         settings={settings}
+      />
+    );
+  }
+
+  if (authScreen === 'reset-password') {
+    return (
+      <ResetPassword 
+        onSuccess={() => {
+          setAuthScreen('signin');
+        }}
+        onBackToLogin={() => {
+          setAuthScreen('signin');
+        }}
+        settings={settings}
+        addToast={addToast}
       />
     );
   }
