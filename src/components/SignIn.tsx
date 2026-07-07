@@ -35,14 +35,22 @@ export default function SignIn({
   showSuccess
 }: SignInProps) {
   const isAmharic = settings.language === 'am';
+  const [viewMode, setViewMode] = useState<'signin' | 'forgot'>('signin');
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState(() => {
-    if (prefillEmail) return prefillEmail;
+    if (prefillEmail && typeof prefillEmail === 'string' && !prefillEmail.includes('[object')) {
+      return prefillEmail;
+    }
     try {
       const params = new URLSearchParams(window.location.search);
-      return params.get('signup_email') || '';
+      const urlEmail = params.get('signup_email');
+      if (urlEmail && typeof urlEmail === 'string' && !urlEmail.includes('[object')) {
+        return urlEmail;
+      }
     } catch (e) {
-      return '';
+      // ignore
     }
+    return '';
   });
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -57,6 +65,50 @@ export default function SignIn({
       return false;
     }
   });
+
+  // Lockout states
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+
+  // Load and check lockout status when email changes
+  useEffect(() => {
+    if (!email) return;
+    const emailKey = email.trim().toLowerCase();
+    const lockoutTimestamp = localStorage.getItem(`ht_lockout_${emailKey}`);
+    const storedFailed = localStorage.getItem(`ht_failed_${emailKey}`);
+    if (storedFailed) {
+      setFailedAttempts(Number(storedFailed));
+    }
+    if (lockoutTimestamp) {
+      const remainingMs = Number(lockoutTimestamp) - Date.now();
+      if (remainingMs > 0) {
+        setLockoutSeconds(Math.ceil(remainingMs / 1000));
+      } else {
+        localStorage.removeItem(`ht_lockout_${emailKey}`);
+        localStorage.removeItem(`ht_failed_${emailKey}`);
+        setFailedAttempts(0);
+      }
+    }
+  }, [email]);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          const emailKey = email.trim().toLowerCase();
+          localStorage.removeItem(`ht_lockout_${emailKey}`);
+          localStorage.removeItem(`ht_failed_${emailKey}`);
+          setFailedAttempts(0);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds, email]);
 
   useEffect(() => {
     try {
@@ -77,6 +129,11 @@ export default function SignIn({
         ? 'የዳታቤዝ ግንኙነት ስህተት፡ ከደመና ዳታቤዝ ጋር መገናኘት አልተቻለም። እባክዎ የእርስዎ Supabase ዩአርኤል (URL) በስህተት አለመዋቀሩን፣ ወይም የበይነመረብ ግንኙነትዎን ያረጋግጡ። ያለ ኢንተርኔት ለመሞከር "Try Offline / Local Demo Mode" የሚለውን ይጫኑ።'
         : 'Database Connection Error: Could not connect to the cloud database. Please check your network connection, or ensure your Supabase VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are correct. To try the app offline, click "Try Offline / Local Demo Mode" below.';
     }
+    if (msg.includes('Invalid login credentials') || msg.includes('does not match') || msg.includes('invalid_grant')) {
+      return isAmharic
+        ? 'የተሳሳተ ኢሜል ወይም የይለፍ ቃል። እባክዎ እንደገና ይሞክሩ።'
+        : 'Invalid email or password. Please try again.';
+    }
     return msg || (isAmharic ? 'የስህተት ሙከራ ተከስቷል፣ እባክዎ እንደገና ይሞክሩ።' : 'An unexpected error occurred. Please try again.');
   };
 
@@ -92,6 +149,39 @@ export default function SignIn({
       });
       if (error) {
         setErrorMsg(getFriendlyErrorMessage(error));
+        import('../lib/logger').then(({ logger }) => {
+          logger.error('auth', 'Google OAuth sign in request failed', { errorMsg: error.message });
+        });
+      }
+    } catch (err: any) {
+      setErrorMsg(getFriendlyErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setErrorMsg(isAmharic ? 'እባክዎ ኢሜልዎን ያስገቡ።' : 'Please enter your email address.');
+      return;
+    }
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin,
+      });
+      if (error) {
+        setErrorMsg(getFriendlyErrorMessage(error));
+        import('../lib/logger').then(({ logger }) => {
+          logger.error('auth', 'Password reset dispatch failed', { email, errorMsg: error.message });
+        });
+      } else {
+        setResetSent(true);
+        import('../lib/logger').then(({ logger }) => {
+          logger.info('auth', 'Secure password reset requested', { email });
+        });
       }
     } catch (err: any) {
       setErrorMsg(getFriendlyErrorMessage(err));
@@ -107,18 +197,60 @@ export default function SignIn({
       return;
     }
 
+    const emailKey = email.trim().toLowerCase();
+
+    // Check brute force lockout
+    const lockoutTimestamp = localStorage.getItem(`ht_lockout_${emailKey}`);
+    if (lockoutTimestamp && Number(lockoutTimestamp) > Date.now()) {
+      const remaining = Math.ceil((Number(lockoutTimestamp) - Date.now()) / 1000);
+      setLockoutSeconds(remaining);
+      setErrorMsg(isAmharic
+        ? `በጣም ብዙ ሙከራዎች ተደርገዋል። እባክዎ ከ ${remaining} ሰከንዶች በኋላ እንደገና ይሞክሩ።`
+        : `Too many failed login attempts. Please try again in ${remaining} seconds.`);
+      return;
+    }
+
     setLoading(true);
     setErrorMsg(null);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
       if (error) {
-        setErrorMsg(getFriendlyErrorMessage(error));
+        const currentFailed = failedAttempts + 1;
+        setFailedAttempts(currentFailed);
+        localStorage.setItem(`ht_failed_${emailKey}`, String(currentFailed));
+
+        import('../lib/logger').then(({ logger }) => {
+          logger.warn('auth', 'Authentication failed', { email, attemptCount: currentFailed, errorMsg: error.message });
+        });
+
+        if (currentFailed >= 5) {
+          const blockUntil = Date.now() + 60000; // 1 minute lockout
+          localStorage.setItem(`ht_lockout_${emailKey}`, String(blockUntil));
+          setLockoutSeconds(60);
+          setErrorMsg(isAmharic
+            ? 'በጣም ብዙ ሙከራዎች ተደርገዋል። መግቢያው ለ 60 ሰከንዶች ተቆልፏል።'
+            : 'Too many failed login attempts. Login has been locked for 60 seconds.');
+          
+          import('../lib/logger').then(({ logger }) => {
+            logger.error('security', 'Account brute force lockout triggered', { email, duration: '60 seconds' });
+          });
+        } else {
+          setErrorMsg(getFriendlyErrorMessage(error));
+        }
       } else if (data?.user) {
+        // Reset failed attempts on success
+        localStorage.removeItem(`ht_failed_${emailKey}`);
+        localStorage.removeItem(`ht_lockout_${emailKey}`);
+
+        import('../lib/logger').then(({ logger }) => {
+          logger.info('auth', 'User authenticated successfully', { email, userId: data.user.id });
+        });
+
         // Redirect the user to the Home page ("/")
         window.history.pushState({}, '', '/');
         onSuccess();
@@ -143,7 +275,7 @@ export default function SignIn({
       >
         {/* Back Button */}
         <button 
-          onClick={onBack}
+          onClick={viewMode === 'forgot' ? () => { setViewMode('signin'); setErrorMsg(null); } : onBack}
           className="absolute top-6 left-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors flex items-center gap-1.5 text-xs font-semibold"
           id="btn-signin-back"
         >
@@ -157,15 +289,19 @@ export default function SignIn({
             <Building2 className="w-6 h-6" />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            {isAmharic ? 'ወደ አካውንትዎ ይግቡ' : 'Welcome Back'}
+            {viewMode === 'forgot'
+              ? (isAmharic ? 'የይለፍ ቃል መቀየር' : 'Reset Password')
+              : (isAmharic ? 'ወደ አካውንትዎ ይግቡ' : 'Welcome Back')}
           </h2>
           <p className="text-slate-400 dark:text-slate-400 text-xs mt-1.5 font-medium">
-            {isAmharic ? 'የሀበሻ ትራከር የንግድ ሥራ መቆጣጠሪያ' : 'Enter your credentials to access your ERP dashboard'}
+            {viewMode === 'forgot'
+              ? (isAmharic ? 'የይለፍ ቃልዎን ለመቀየር ኢሜልዎን ያስገቡ' : 'Enter your email to receive a password reset link')
+              : (isAmharic ? 'የሀበሻ ትራከር የንግድ ሥራ መቆጣጠሪያ' : 'Enter your credentials to access your ERP dashboard')}
           </p>
         </div>
 
         {/* Success message above form */}
-        {showSuccessMsg && (
+        {showSuccessMsg && viewMode === 'signin' && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -186,91 +322,190 @@ export default function SignIn({
           </motion.div>
         )}
 
-        {/* Sign In Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Email Input */}
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-              {isAmharic ? 'የኢሜል አድራሻ' : 'Email Address'}
-            </label>
-            <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@company.com"
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all dark:text-white placeholder-slate-400"
-                id="input-signin-email"
-              />
-            </div>
-          </div>
+        {/* Form Body - Conditional between Sign In and Reset Password */}
+        {viewMode === 'forgot' ? (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            
+            {/* Reset Sent Confirmation */}
+            {resetSent && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-5 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs flex items-start gap-2.5 shadow-sm"
+                id="success-msg-reset-sent"
+              >
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5 text-emerald-500" />
+                <div className="space-y-1">
+                  <p className="font-bold">
+                    {isAmharic ? 'የመቀየሪያ ሊንክ ተልኳል!' : 'Reset Link Sent!'}
+                  </p>
+                  <p className="leading-relaxed opacity-90">
+                    {isAmharic 
+                      ? 'የይለፍ ቃል መቀየሪያ ሊንክ ወደ ኢሜልዎ ልከናል። እባክዎ ኢሜልዎን ይፈትሹ።' 
+                      : 'Please check your email inbox for a link to reset your account password.'}
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
-          {/* Password Input */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
+            {/* Email Input */}
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                {isAmharic ? 'የይለፍ ቃል' : 'Password'}
+                {isAmharic ? 'የኢሜል አድራሻ' : 'Email Address'}
               </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all dark:text-white placeholder-slate-400"
+                  id="input-reset-email"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input 
-                type={showPassword ? 'text' : 'password'}
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all dark:text-white placeholder-slate-400"
-                id="input-signin-password"
-              />
+
+            {/* Simple Error Message display */}
+            {errorMsg && (
+              <motion.div 
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2"
+                id="error-msg-reset"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </motion.div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition duration-150 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              id="btn-reset-submit"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{isAmharic ? 'በመላክ ላይ...' : 'Sending Link...'}</span>
+                </>
+              ) : (
+                <>
+                  <span>{isAmharic ? 'የይለፍ ቃል መቀየሪያ ላክ' : 'Send Reset Link'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+            {/* Switch back to login link */}
+            <div className="text-center pt-2">
               <button 
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-hidden"
-                id="btn-signin-toggle-pwd"
+                onClick={() => { setViewMode('signin'); setErrorMsg(null); }}
+                className="text-xs font-bold text-emerald-500 hover:text-emerald-600 transition"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {isAmharic ? 'ወደ መግቢያ ገጽ ተመለስ' : 'Back to Login'}
               </button>
             </div>
-          </div>
 
-          {/* Simple Error Message display */}
-          {errorMsg && (
-            <motion.div 
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2"
-              id="error-msg-signin"
-            >
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{errorMsg}</span>
-            </motion.div>
-          )}
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            
+            {/* Email Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                {isAmharic ? 'የኢሜል አድራሻ' : 'Email Address'}
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all dark:text-white placeholder-slate-400"
+                  id="input-signin-email"
+                />
+              </div>
+            </div>
 
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition duration-150 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2"
-            id="btn-signin-submit"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{isAmharic ? 'በመግባት ላይ...' : 'Signing In...'}</span>
-              </>
-            ) : (
-              <>
-                <span>{isAmharic ? 'ግባ' : 'Sign In'}</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
+            {/* Password Input */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                  {isAmharic ? 'የይለፍ ቃል' : 'Password'}
+                </label>
+                <button
+                  type="button"
+                  onClick={() => { setViewMode('forgot'); setErrorMsg(null); }}
+                  className="text-xs font-semibold text-emerald-500 hover:text-emerald-600 transition focus:outline-hidden"
+                  id="btn-signin-forgot-password"
+                >
+                  {isAmharic ? 'የይለፍ ቃል ረሱ?' : 'Forgot Password?'}
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input 
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-10 pr-10 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all dark:text-white placeholder-slate-400"
+                  id="input-signin-password"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 focus:outline-hidden"
+                  id="btn-signin-toggle-pwd"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Simple Error Message display */}
+            {errorMsg && (
+              <motion.div 
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-start gap-2"
+                id="error-msg-signin"
+              >
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </motion.div>
             )}
-          </button>
 
-        </form>
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading || lockoutSeconds > 0}
+              className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition duration-150 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+              id="btn-signin-submit"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{isAmharic ? 'በመግባት ላይ...' : 'Signing In...'}</span>
+                </>
+              ) : (
+                <>
+                  <span>{isAmharic ? 'ግባ' : 'Sign In'}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+
+          </form>
+        )}
 
         {/* Or Divider */}
         <div className="relative my-5">

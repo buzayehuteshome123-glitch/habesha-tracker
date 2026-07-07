@@ -53,12 +53,12 @@ export default function Settings({
   const [preferSinqee, setPreferSinqee] = useState(settings.preferSinqee !== false);
   const [preferOther, setPreferOther] = useState(settings.preferOther === true);
 
-  const [startingCBE, setStartingCBE] = useState((settings.startingCBE ?? 150000).toString());
-  const [startingTelebirr, setStartingTelebirr] = useState((settings.startingTelebirr ?? 100000).toString());
-  const [startingEBirr, setStartingEBirr] = useState((settings.startingEBirr ?? 40000).toString());
-  const [startingSinqee, setStartingSinqee] = useState((settings.startingSinqee ?? 30000).toString());
+  const [startingCBE, setStartingCBE] = useState((settings.startingCBE ?? 0).toString());
+  const [startingTelebirr, setStartingTelebirr] = useState((settings.startingTelebirr ?? 0).toString());
+  const [startingEBirr, setStartingEBirr] = useState((settings.startingEBirr ?? 0).toString());
+  const [startingSinqee, setStartingSinqee] = useState((settings.startingSinqee ?? 0).toString());
   const [startingOther, setStartingOther] = useState((settings.startingOther ?? 0).toString());
-  const [startingCash, setStartingCash] = useState((settings.startingCash ?? 65000).toString());
+  const [startingCash, setStartingCash] = useState((settings.startingCash ?? 0).toString());
 
   const handleSaveDetails = (e: React.FormEvent) => {
     e.preventDefault();

@@ -9,14 +9,11 @@ import {
   CheckCircle2, 
   ChevronDown, 
   ChevronUp, 
-  Layers, 
-  ShoppingBag, 
   Users, 
   CreditCard, 
   Sparkles, 
   ArrowRight,
   Zap,
-  Calendar,
   Smartphone,
   Laptop,
   Check,
@@ -30,7 +27,12 @@ import {
   Phone,
   MapPin,
   MessageSquare,
-  WifiOff
+  FileSpreadsheet,
+  FileText,
+  BadgePercent,
+  CheckCircle,
+  HelpCircle,
+  ArrowRightLeft
 } from 'lucide-react';
 import { BusinessSettings } from '../types';
 
@@ -41,6 +43,356 @@ interface LandingPageProps {
   settings: BusinessSettings;
   setSettings: React.Dispatch<React.SetStateAction<BusinessSettings>>;
 }
+
+// Global localization dictionary for SaaS landing page
+const translations = {
+  en: {
+    nav: {
+      features: "Features",
+      whyUs: "Why Us",
+      faq: "FAQ",
+      pricing: "Pricing",
+      aboutUs: "About Us",
+      contactUs: "Contact Us",
+      support: "Support / Telegram",
+      logIn: "Log In",
+      startTrial: "Get Started Free"
+    },
+    hero: {
+      badge: "Built for Ethiopian Businesses 🇪🇹",
+      title: "Manage Your Entire Business in One Place",
+      subtitle: "Habesha Tracker helps Ethiopian businesses manage inventory, sales, customer debts, expenses, profits, and subscriptions from one secure cloud platform.",
+      ctaStart: "Get Started Free",
+      ctaDemo: "Live Dashboard Preview",
+      badgeSecure: "Secure Cloud Storage",
+      badgeBackup: "Automatic Backup",
+      badgeDevices: "Mobile & Desktop",
+      badgeLocal: "Built for Ethiopia"
+    },
+    mockup: {
+      title: "Ethiopian Banking & Wallet Summary",
+      badgeText: "Live Ledger",
+      subtitle: "Real-time ledger overview for your active Ethiopian financial channels.",
+      saleAmount: "Sales Amount (ETB)",
+      profitMargin: "Profit Margin (%)",
+      estimatedProfit: "Estimated Net Profit",
+      recordBtn: "Save Mock Transaction",
+      revenue: "Cash on Hand",
+      bankBal: "Total in Bank",
+      stockVal: "Telebirr Wallet",
+      growthText: "↑ 14% sales growth",
+      cbeText: "CBE / Telebirr reconciled",
+      latestSales: "Live Mock Transactions",
+      cash: "Cash on Hand",
+      bankTransfer: "Total in Bank",
+      telebirr: "Telebirr Wallet"
+    },
+    features: {
+      sectionBadge: "UNRIVALED FEATURES",
+      sectionTitle: "Everything You Need to Scale Your Retail Business",
+      sectionDesc: "A complete operational suite designed to prevent financial leakages, manage stock balances, and track digital bank transactions.",
+      items: [
+        {
+          title: "Inventory Management",
+          desc: "Track stock quantities in real time, receive low-stock email/SMS alerts, and easily manage unlimited products and variants."
+        },
+        {
+          title: "Sales Tracking",
+          desc: "Record daily customer transactions instantly with divided cash, bank transfer, and Telebirr payment method records."
+        },
+        {
+          title: "Customer Debt Ledger",
+          desc: "Keep absolute control over customer receivables. Track individual payment histories and absolute credit records."
+        },
+        {
+          title: "Business Analytics",
+          desc: "Monitor your net profits, revenue, operating margins, and seasonal store performance in an elegant graphical dashboard."
+        },
+        {
+          title: "PDF & Excel Reports",
+          desc: "Generate professional business performance reports, inventory summaries, and cash flow exports in a single click."
+        },
+        {
+          title: "Secure Cloud Backup",
+          desc: "Automatically synchronize and safeguard your business registers with zero manual effort. Your logs are always accessible."
+        }
+      ]
+    },
+    whyUs: {
+      badge: "WHY CHOOSE US",
+      title: "Designed Specifically for Ethiopian Commerce",
+      desc: "Unlike complex, rigid international accounting software, Habesha Tracker respects localized financial dynamics, payment channels, and operational rhythms.",
+      stats: [
+        { value: "99.9%", label: "Cloud Uptime" },
+        { value: "100%", label: "Secure Isolation" },
+        { value: "24/7", label: "Instant Synchronization" },
+        { value: "Unlimited", label: "Growth Potential" }
+      ],
+      list: [
+        {
+          title: "Extremely Clean UX",
+          desc: "No training required. Designed so any retail worker or business manager can record sales in less than 3 seconds."
+        },
+        {
+          title: "Dual Language Support",
+          desc: "Easily toggle the entire application workspace between English and Amharic with one click."
+        },
+        {
+          title: "Localized Financial Rails",
+          desc: "Built-in options for Telebirr, CBE Birr, Awash Bank, Dashen Bank, and standard cash splits."
+        }
+      ]
+    },
+    pricing: {
+      badge: "MEMBERSHIP",
+      title: "One Premium Plan. Unlimited Growth.",
+      desc: "Become an early adopter and join our Founding Merchant circle with full lifetime benefits.",
+      planName: "Founding Merchant Plan",
+      planDesc: "Perfect for retail shops, wholesalers, grain exporters, and growing Ethiopian enterprises.",
+      price: "199 Br",
+      pricePeriod: "/ month",
+      priceSub: "Billed annually or 299 Br monthly. No hidden fees.",
+      buttonText: "Become a Founding Merchant",
+      limitedOffer: "🔥 Exclusive Limited Offer for early sign-ups",
+      features: [
+        "Unlimited Products & Stock Tracking",
+        "Advanced Real-time Analytics & Profits",
+        "Automatic Secure Cloud Backup",
+        "Unlimited PDF Reports Generation",
+        "Excel & CSV Data Exports",
+        "Multi-device Synchronized Access",
+        "24/7 Priority Support & Free Onboarding"
+      ]
+    },
+    steps: {
+      badge: "HOW IT WORKS",
+      title: "Five Simple Steps to Financial Clarity",
+      desc: "Transform how you run your store in less than 5 minutes. No complex setups or expensive consultants.",
+      items: [
+        { step: "Step 1", title: "Create Free Account", desc: "Sign up with your email. No credit card required." },
+        { step: "Step 2", title: "Complete Profile", desc: "Enter your store name, category, and preferred language." },
+        { step: "Step 3", title: "Add Products", desc: "Upload your catalog, define costs, selling prices, and alert levels." },
+        { step: "Step 4", title: "Record Sales", desc: "Process client transactions and choose Cash, CBE Bank, or Telebirr." },
+        { step: "Step 5", title: "Grow Your Business", desc: "Analyze profit trends, track customer debts, and export PDF summaries." }
+      ]
+    },
+    faq: {
+      badge: "SUPPORT CENTER",
+      title: "Frequently Asked Questions",
+      items: [
+        {
+          q: "How do I upgrade to the premium plan?",
+          a: "Upgrading is simple! You can upgrade directly from your business settings tab or contact our local support specialists. We support convenient payments through local bank transfers (C CBE, Awash, Dashen) or Telebirr."
+        },
+        {
+          q: "Is my data secure?",
+          a: "Yes, absolutely. Your database is isolated using advanced cloud firewalls and protected continuously with real-time automatic backup. We adhere to top-tier enterprise encryption to guarantee that only you can access your commercial records."
+        },
+        {
+          q: "Can I access my account on multiple devices?",
+          a: "Yes! Habesha Tracker is a fully synchronized cross-platform web application. You can simultaneously log in and manage your business from a laptop, office tablet, or a personal smartphone, and all logs stay in perfect sync."
+        },
+        {
+          q: "Do I need accounting or bookkeeping experience?",
+          a: "Not at all. Habesha Tracker was built for busy merchants and store owners. We replaced dry, complex double-entry ledger terminology with intuitive buttons, simple stock alerts, and automated net profit trackers."
+        },
+
+        {
+          q: "Can I get a free tutorial?",
+          a: "Yes, 100%! We offer comprehensive video tutorials, interactive Telegram walkthroughs, and step-by-step manuals in both Amharic and English. Premium founding merchants can also request a free 1-on-1 staff training session."
+        }
+      ]
+    },
+    cta: {
+      title: "Ready to Modernize Your Business?",
+      subtitle: "Join progressive Ethiopian businesses using Habesha Tracker to protect inventory, secure customer loans, and run commercial operations with confidence.",
+      button: "Start Free Today",
+      microText: "No credit card required • Instant setup in 15 seconds"
+    },
+    footer: {
+      companyDesc: "Empowering retailers, distributors, wholesalers, and grain exporters in Ethiopia with modern bookkeeping tools.",
+      rights: "Habesha Tracker Cloud Systems. All rights reserved.",
+      columns: {
+        product: "SaaS Product",
+        resources: "Resources",
+        contact: "Addis Ababa Office"
+      }
+    }
+  },
+  am: {
+    nav: {
+      features: "ልዩ ባህሪያት",
+      whyUs: "ለምን መረጡን",
+      faq: "ጥያቄዎች",
+      pricing: "ዋጋ",
+      aboutUs: "ስለ እኛ",
+      contactUs: "ያግኙን",
+      support: "ቴሌግራም ድጋፍ",
+      logIn: "ግባ",
+      startTrial: "በነጻ ይጀምሩ"
+    },
+    hero: {
+      badge: "ለኢትዮጵያ ንግዶች የተሰራ 🇪🇹",
+      title: "አጠቃላይ ንግድዎን በአንድ ቦታ ያስተዳድሩ",
+      subtitle: "የሀበሻ ትራከር የኢትዮጵያ የንግድ ድርጅቶች የዕቃ ክምችት፣ ሽያጭ፣ የደንበኞች እዳ፣ ወጪ፣ ትርፍ እና የደንበኝነት ክፍያዎችን በአንድ ደህንነቱ በተጠበቀ የደመና (cloud) መድረክ ላይ እንዲያስተዳድሩ ይረዳል።",
+      ctaStart: "በነጻ ይጀምሩ",
+      ctaDemo: "ቀጥታ የዳሽቦርድ ማሳያ",
+      badgeSecure: "ደህንነቱ የተጠበቀ ደመና",
+      badgeBackup: "አውቶማቲክ መጠባበቂያ",
+      badgeDevices: "በስልክና በኮምፒውተር",
+      badgeLocal: "ለሀገር ውስጥ የተዘጋጀ"
+    },
+    mockup: {
+      title: "የኢትዮጵያ ባንክ እና የዲጂታል ዋሌት ማጠቃለያ",
+      badgeText: "የቀጥታ ሂሳብ መዝገብ (Live Ledger)",
+      subtitle: "ለእርስዎ ንቁ የኢትዮጵያ የፋይናንስ አማራጮች የቀጥታ የሂሳብ መዝገብ አጠቃላይ እይታ።",
+      saleAmount: "የሽያጭ ዋጋ (Br)",
+      profitMargin: "የትርፍ መጠን (%)",
+      estimatedProfit: "የተጣራ የተገመተ ትርፍ",
+      recordBtn: "በመዝገቡ ላይ ይመዝግቡ",
+      revenue: "በእጅ ላይ ያለ ጥሬ ገንዘብ",
+      bankBal: "በባንክ ያለው አጠቃላይ ሂሳብ",
+      stockVal: "የቴሌብር የሂሳብ መጠን",
+      growthText: "↑ 14% የሽያጭ እድገት",
+      cbeText: "ባንክና ቴሌብር ተጣጥሟል",
+      latestSales: "የቀጥታ የሽያጭ ልምምድ",
+      cash: "በእጅ ላይ ያለ ጥሬ ገንዘብ",
+      bankTransfer: "በባንክ ያለው አጠቃላይ ሂሳብ",
+      telebirr: "የቴሌብር የሂሳብ መጠን"
+    },
+    features: {
+      sectionBadge: "የተሟሉ አገልግሎቶች",
+      sectionTitle: "ለንግድዎ ስኬት የሚያስፈልጉ ዘመናዊ መቆጣጠሪያዎች",
+      sectionDesc: "የዕቃዎች ክምችት እንዳይባክን ለመከላከል፣ የብድር ቀሪዎችን ለመቆጣጠርና ዕለታዊ ሽያጮችን በትክክል ለመመዝገብ የሚረዱ ልዩ መተግበሪያዎች።",
+      items: [
+        {
+          title: "የዕቃ ክምችት ቁጥጥር",
+          desc: "የዕቃዎችን መጠን በየሴኮንዱ ይከታተሉ፣ ያለቁ ዕቃዎች ማስጠንቀቂያዎችን በኢሜይል ወይም በኤስኤምኤስ ያግኙ፣ እና ያልተገደበ ምርቶችን ያስተዳድሩ።"
+        },
+        {
+          title: "የሽያጭ መከታተያ",
+          desc: "ዕለታዊ ሽያጮችን በእጅ ገንዘብ፣ በባንክ ማስተላለፊያ (CBE, Awash ወዘተ) እና በቴሌብር የክፍያ መንገዶች በቅጽበት ይመዝግቡ።"
+        },
+        {
+          title: "የደንበኞች እዳ (ዱቤ)",
+          desc: "የደንበኞችን የዱቤ መዝገብ እና ክፍያዎችን ሙሉ በሙሉ ይቆጣጠሩ። የእያንዳንዱን ደንበኛ የክፍያ ታሪክ በጥራት ይከታተሉ።"
+        },
+        {
+          title: "የንግድ ትንተና (Analytics)",
+          desc: "የተጣራ ትርፍዎን፣ ወጪዎችን እና የንግድዎን ዕድገት በሚያምሩ ግራፎች እና ዝርዝር የሽያጭ ማጠቃለያዎች ይመልከቱ።"
+        },
+        {
+          title: "የፒዲኤፍ እና ኤክሴል ሪፖርቶች",
+          desc: "የንግድዎን አፈጻጸም ሪፖርቶች፣ የዕቃ ክምችት ዝርዝሮችን እና የገንዘብ እንቅስቃሴዎችን በአንድ ጠቅታ ያውርዱ።"
+        },
+        {
+          title: "አስተማማኝ የደመና መጠባበቂያ",
+          desc: "የንግድ መረጃዎችዎ ደህንነታቸው ተጠብቆ በራስ-ሰር ደመና (Cloud) ላይ እንዲቀመጡ ያድርጉ። ያለ ኢንተርኔትም ይሰራል።"
+        }
+      ]
+    },
+    whyUs: {
+      badge: "ለምን መረጡን?",
+      title: "ለኢትዮጵያ ንግዶች ፍላጎት የተበጀ ልዩ ቴክኖሎጂ",
+      desc: "ሀበሻ ትራከር ከሌሎች የውጭ አገር ሲስተሞች በተለየ መልኩ የሀገር ውስጥ የንግድ ባህሪያትን፣ ዲጂታል ባንኮችን እና የቴሌብር ክፍያዎችን ታሳቢ አድርጎ የተሰራ ነው።",
+      stats: [
+        { value: "99.9%", label: "የሲስተም ዝግጁነት" },
+        { value: "100%", label: "የመረጃ ዋስትና" },
+        { value: "24/7", label: "ፈጣን ማመሳሰል" },
+        { value: "ያልተገደበ", label: "የንግድ እድገት" }
+      ],
+      list: [
+        {
+          title: "ቀላልና ፈጣን አጠቃቀም",
+          desc: "ምንም አይነት ስልጠና አያስፈልገውም። ማንኛውም ሠራተኛ በ3 ሰከንድ ውስጥ ሽያጮችን መመዝገብ እንዲችል ተደርጎ የተሰራ ነው።"
+        },
+        {
+          title: "በአማርኛ እና በEnglish",
+          desc: "ሲስተሙን ሙሉ በሙሉ በአማርኛ ወይም በEnglish ቋንቋ በአንድ ጠቅታ መቀያየር ይችላሉ።"
+        },
+        {
+          title: "የሀገር ውስጥ ክፍያዎችን ያካተተ",
+          desc: "ለቴሌብር፣ ለሲቢኢ ብር፣ ለአዋሽ፣ ለዳሽን እና ለጥሬ ገንዘብ የተዘጋጁ ምቹ የመመዝገቢያ መንገዶች አሉት።"
+        }
+      ]
+    },
+    pricing: {
+      badge: "የአባልነት ክፍያ",
+      title: "አንድ ፕሪሚየም ዕቅድ። ያልተገደበ ስኬት።",
+      desc: "አሁኑኑ በመመዝገብ ልዩ ጥቅማ ጥቅሞችን ያካተተውን የ'መስራች ነጋዴ' ዕቅድን በቅናሽ ያግኙ።",
+      planName: "የመስራች ነጋዴ (Founding) ዕቅድ",
+      planDesc: "ለችርቻሮ ሱቆች፣ ለጅምላ አከፋፋዮች፣ ለእህል ላኪዎች እና ለማንኛውም በማደግ ላይ ለሚገኙ የኢትዮጵያ ንግዶች የተሰራ።",
+      price: "199 Br",
+      pricePeriod: "/ በወር",
+      priceSub: "በዓመት ሲከፈል በወር 199 ብር። በየወሩ ከሆነ 299 ብር። ምንም የተደበቀ ክፍያ የለም።",
+      buttonText: "መስራች ነጋዴ ይሁኑ",
+      limitedOffer: "🔥 ቀድመው ለሚመዘገቡ ብቻ የሚቀርብ ልዩ የዕድሜ ልክ ቅናሽ",
+      features: [
+        "ያልተገደበ ምርቶች እና የክምችት ክትትል",
+        "የላቀ የእውነተኛ ጊዜ የትርፍና ሽያጭ ትንተና",
+        "ደህንነቱ የተጠበቀ አውቶማቲክ የደመና መጠባበቂያ",
+        "ያልተገደበ የፒዲኤፍ ሪፖርቶች ማመንጨት",
+        "በኤክሴል እና በCSV መረጃዎችን ማውጣት",
+        "በስልክ እና በኮምፒውተር በአንድ ላይ መጠቀም",
+        "24/7 ቀዳሚ የቴክኒክ ድጋፍ እና ነጻ ስልጠና"
+      ]
+    },
+    steps: {
+      badge: "እንዴት ይሰራል?",
+      title: "ለንግድዎ ግልጽነት የሚሰጡ አምስት ቀላል ደረጃዎች",
+      desc: "በአምስት ደቂቃ ውስጥ የንግድዎን የሂሳብ አያያዝ ዘመናዊ ያድርጉ። ምንም አይነት ባለሙያ መቅጠር አያስፈልግዎትም።",
+      items: [
+        { step: "ደረጃ 1", title: "ነጻ መለያ ይፍጠሩ", desc: "በኢሜይል አድራሻዎ ይመዝገቡ። ምንም አይነት የክፍያ ካርድ አይጠይቅም።" },
+        { step: "ደረጃ 2", title: "መረጃዎን ያጠናቅቁ", desc: "የሱቅዎን ስም፣ የስራ ዘርፍ እና መጠቀም የሚፈልጉትን ቋንቋ ያስገቡ።" },
+        { step: "ደረጃ 3", title: "ምርቶችን ያስገቡ", desc: "የዕቃዎችዎን ዝርዝር፣ የገዙበትንና የሚሸጡበትን ዋጋ ያስገቡ።" },
+        { step: "ደረጃ 4", title: "ሽያጮችን ይመዝግቡ", desc: "ሽያጭ ሲያካሂዱ በካሽ፣ በባንክ ወይም በቴሌብር ተከፍሎ እንደሆነ መርጠው ይመዝግቡ።" },
+        { step: "ደረጃ 5", title: "ንግድዎን ያሳድጉ", desc: "በትርፍና ኪሳራ ትንተና፣ በብድር ክትትል እና በፒዲኤፍ ሪፖርቶች ንግድዎን ያሳድጉ።" }
+      ]
+    },
+    faq: {
+      badge: "የእገዛ ማዕከል",
+      title: "ተደጋግመው የሚነሱ ጥያቄዎችና ምላሾች",
+      items: [
+        {
+          q: "እንዴት ወደ ፕሪሚየም ማሻሻል (upgrade) እችላለሁ?",
+          a: "ማሻሻል እጅግ በጣም ቀላል ነው! በቀጥታ በመተግበሪያው ቅንብሮች (Settings) ውስጥ ማሻሻል ይችላሉ ወይም የእኛን የድጋፍ ባለሙያዎች ያነጋግሩ። ክፍያዎችን በባንክ ማስተላለፊያ (ንግድ ባንክ፣ አዋሽ፣ ዳሽን) ወይም በቴሌብር መቀበል እንችላለን።"
+        },
+        {
+          q: "የእኔ መረጃ ደህንነቱ የተጠበቀ ነው?",
+          a: "አዎ፣ በእርግጠኝነት። መረጃዎችዎ ዘመናዊ ፋየርዎሎችን በመጠቀም ደህንነታቸው በተጠበቀ የውሂብ ጎታዎች ውስጥ ይለያሉ፣ እንዲሁም በየጊዜው በራስ-ሰር መጠባበቂያ (Cloud backup) ይደረጋሉ፤ መረጃዎን እርስዎ ብቻ ማየት ይችላሉ።"
+        },
+        {
+          q: "በተለያዩ መሳሪያዎች በአንድ ጊዜ መጠቀም እችላለሁ?",
+          a: "አዎ! ሀበሻ ትራከር ሙሉ ለሙሉ የደመና መተግበሪያ በመሆኑ በኮምፒውተር፣ በታብሌት ወይም በስልክ በአንድ ላይ መግባት ይችላሉ፣ መረጃዎ በሁሉም ላይ ወዲያውኑ ይመሳሰላል።"
+        },
+        {
+          q: "የሂሳብ አያያዝ ልምድ ወይም ትምህርት ያስፈልገኛል?",
+          a: "በጭራሽ። መተግበሪያው የተሰራው ምንም የሂሳብ እውቀት የሌላቸው የሱቅ ባለቤቶችም በቀላሉ እንዲረዱት ተደርጎ ነው። ውስብስብ የሆኑ ቃላትን አስቀርተን በቀላሉ ሽያጭ እንዲመዘግቡ አድርገናል።"
+        },
+
+        {
+          q: "ነጻ የስልጠና ቪዲዮዎችን ማግኘት እችላለሁ?",
+          a: "አዎ፣ በእርግጠኝነት! በአማርኛ እና በEnglish የተዘጋጁ ደረጃ በደረጃ የሚያስተምሩ የቪዲዮ ስልጠናዎችን፣ የቴሌግራም የቀጥታ እገዛዎችን እና መመሪያዎችን እናቀርባለን። ፕሪሚየም አባላት ደግሞ በአካል ስልጠና መጠየቅ ይችላሉ።"
+        }
+      ]
+    },
+    cta: {
+      title: "ንግድዎን በዘመናዊ መንገድ ለመምራት ዝግጁ ነዎት?",
+      subtitle: "የዕቃ ክምችትን፣ ሽያጮችን እና ወጪዎችን በልበ ሙሉነት ለመቆጣጠር የሀበሻ ትራከርን የሚጠቀሙ ስኬታማ የኢትዮጵያ ንግዶችን ይቀላቀሉ።",
+      button: "ዛሬውኑ በነጻ ይጀምሩ",
+      microText: "ምንም አይነት የክፍያ ካርድ አያስፈልግም • በ15 ሰከንድ ውስጥ ይመዝገቡ"
+    },
+    footer: {
+      companyDesc: "በኢትዮጵያ ውስጥ ያሉ የችርቻሮ ሱቆችን፣ አከፋፋዮችን፣ ጅምላ ነጋዴዎችን እና ላኪዎችን በዘመናዊ የሂሳብ አያያዝ ቴክኖሎጂ እናበቃለን።",
+      rights: "የሀበሻ ትራከር የደመና ሲስተምስ። መብቱ በህግ የተጠበቀ ነው።",
+      columns: {
+        product: "አገልግሎቶች",
+        resources: "ጠቃሚ ገጾች",
+        contact: "የአዲስ አበባ ቢሮ"
+      }
+    }
+  }
+};
 
 export default function LandingPage({ 
   onEnterApp, 
@@ -53,30 +405,41 @@ export default function LandingPage({
   const handleSignUp = onSignUpClick || onEnterApp;
   const isAmharic = settings.language === 'am';
   const isDark = settings.theme === 'dark';
+  const t = isAmharic ? translations.am : translations.en;
 
-  // State for FAQ accordion
+  // FAQ Accordion Active state
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
-  // State for active document modal (About Us, Contact, Support, Terms, Privacy)
+  // Document modal toggler
   const [activeDocument, setActiveDocument] = useState<'about' | 'contact' | 'support' | 'terms' | 'privacy' | null>(null);
 
-  // State for interactive live billing preview widget
+  // Interactive mockup simulator state
   const [demoSaleAmount, setDemoSaleAmount] = useState<number>(3450);
-  const [demoCommission, setDemoCommission] = useState<number>(2.5);
+  const [demoProfitMargin, setDemoProfitMargin] = useState<number>(15);
+  const [mockSales, setMockSales] = useState<Array<{ name: string; item: string; amount: number; method: string }>>([
+    { name: "Almaz Bekele", item: "Red Teff x2 bags", amount: 12400, method: "bank" },
+    { name: "Kedir Yusuf", item: "Premium Wheat x5", amount: 8250, method: "telebirr" },
+    { name: "Sintayehu Assefa", item: "Sunflower Oil x10L", amount: 2100, method: "cash" }
+  ]);
+  const [inputName, setInputName] = useState<string>("");
+  const [inputItem, setInputItem] = useState<string>("");
 
-  // Stats count up animation simulation
-  const [bizCount, setBizCount] = useState(120);
-  const [itemsCount, setItemsCount] = useState(2400);
-  const [salesCount, setSalesCount] = useState(5800);
+  const handleAddMockSale = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = inputName.trim() || (isAmharic ? "አዲስ ደንበኛ" : "Walk-in Customer");
+    const item = inputItem.trim() || (isAmharic ? "የተለያዩ ምርቶች" : "Assorted Products");
+    const methods = ["cash", "bank", "telebirr"];
+    const randomMethod = methods[Math.floor(Math.random() * methods.length)];
+    
+    setMockSales(prev => [
+      { name, item, amount: demoSaleAmount, method: randomMethod },
+      ...prev.slice(0, 2)
+    ]);
+    setInputName("");
+    setInputItem("");
+  };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBizCount(prev => (prev < 4250 ? prev + Math.floor(Math.random() * 80) + 40 : 4250));
-      setItemsCount(prev => (prev < 1250000 ? prev + Math.floor(Math.random() * 25000) + 12000 : 1250000));
-      setSalesCount(prev => (prev < 8540200 ? prev + Math.floor(Math.random() * 180000) + 90000 : 8540200));
-    }, 40);
-    return () => clearInterval(interval);
-  }, []);
+
 
   const toggleTheme = () => {
     setSettings(prev => ({
@@ -92,197 +455,106 @@ export default function LandingPage({
     }));
   };
 
-  const features = [
-    {
-      icon: <Database className="w-6 h-6 text-emerald-500" />,
-      titleEn: "Smart Inventory & Stocks",
-      titleAm: "የዘመነ የዕቃ ክምችትና ቁጥጥር",
-      descEn: "Track stock quantities, low-stock notifications, dynamic categories, and retail valuation.",
-      descAm: "የዕቃዎች መጠን፣ ያለቁ ዕቃዎች ማስጠንቀቂያ፣ የዋጋ ግምትና ዝርዝር መረጃዎችን በአንድ ቦታ ይቆጣጠሩ።"
-    },
-    {
-      icon: <TrendingUp className="w-6 h-6 text-indigo-500" />,
-      titleEn: "Instant Sales Tracking",
-      titleAm: "ፈጣን የሽያጭ መመዝገቢያ",
-      descEn: "Record daily transactions, generate professional printable PDF receipts, and track customer balances.",
-      descAm: "ዕለታዊ ሽያጮችን ይመዝግቡ፣ በፒዲኤፍ ደረሰኞች ያውጡ፣ እና የደንበኞችን የዱቤ ቀሪ ሂሳብ ይከታተሉ።"
-    },
-    {
-      icon: <CreditCard className="w-6 h-6 text-cyan-500" />,
-      titleEn: "Expense & Finance Ledger",
-      titleAm: "የወጪና ፋይናንስ ቁጥጥር",
-      descEn: "Monitor categorized operating costs, supplier records, and track dynamic bank vs. cash flows.",
-      descAm: "የንግድዎን ወጪዎች በየዘርፉ ይመድቡ፣ የላኪዎችን ሂሳብና የባንክና በእጅ ያሉ ጥሬ ገንዘቦችን ይቆጣጠሩ።"
-    },
-    {
-      icon: <Users className="w-6 h-6 text-purple-500" />,
-      titleEn: "Customer & Supplier CRM",
-      titleAm: "የደንበኞችና ላኪዎች መረጃ",
-      descEn: "Maintain dynamic profiles, track absolute credit history, and manage relationship ledgers.",
-      descAm: "የደንበኞችና የአቅራቢዎችን ዝርዝር መረጃ፣ የክፍያ ታሪክና አጠቃላይ የዱቤ ልውውጦችን ይከታተሉ።"
-    },
-    {
-      icon: <BarChart3 className="w-6 h-6 text-amber-500" />,
-      titleEn: "Executive PDF Reports",
-      titleAm: "የተሟሉ የፒዲኤፍ ሪፖርቶች",
-      descEn: "Compile daily performance summaries, profit & loss analysis, and professional exports.",
-      descAm: "ዕለታዊ የሽያጭ ሪፖርት፣ የትርፍና ኪሳራ ስሌት እና ለማንበብ ቀላል የሆኑ የፒዲኤፍ ፋይሎችን ያውርዱ።"
-    },
-    {
-      icon: <Shield className="w-6 h-6 text-rose-500" />,
-      titleEn: "Secured Local & Cloud Sync",
-      titleAm: "አስተማማኝ የደመናና የአካባቢ መጠባበቂያ",
-      descEn: "Advanced client data backup, instant security levels, and real-time ledger consistency.",
-      descAm: "የመረጃዎችዎ አስተማማኝ መጠባበቂያ (Backup) እና ከፍተኛ የደህንነት ጥበቃ በማንኛውም ሰዓት ያግኙ።"
-    }
-  ];
-
-  const faqs = [
-    {
-      qEn: "Is Habesha Tracker compliant with Ethiopian banking standards?",
-      qAm: "የሀበሻ ትራከር ከኢትዮጵያ ባንኮች አሰራር ጋር ይጣጣማል?",
-      aEn: "Yes! We support standard local workflows including Commercial Bank of Ethiopia (CBE), Awash, Dashen, and mobile banking splits (Telebirr). You can categorize transactions by specific payment methods easily.",
-      aAm: "አዎ! የኢትዮጵያ ንግድ ባንክ (CBE)፣ አዋሽ፣ ዳሽን እና የቴሌብር (Telebirr) የክፍያ መንገዶችን በሙሉ ይደግፋል። ሽያጮችንና ወጪዎችን በየባንክ ዓይነታቸው መመደብ ይችላሉ።"
-    },
-    {
-      qEn: "Is my data safe if my internet goes down?",
-      qAm: "ኢንተርኔት ቢቋረጥ መረጃዬ አስተማማኝ ነው?",
-      aEn: "Absolutely. Habesha Tracker operates on a advanced local-first database cache. If your internet connection drops, the app stores all transactions safely on your device. As soon as connectivity returns, your records are automatically synchronized with our secure server, meaning you never lose a single transaction.",
-      aAm: "አዎ፣ በእርግጠኝነት! ሀበሻ ትራከር ከመስመር ውጭ መስራት በሚችል (local-first cache) ዘመናዊ ቴክኖሎጂ የተገነባ በመሆኑ ኢንተርኔት ቢቋረጥም እንኳ መረጃዎ በስልክዎ ወይም በኮምፒውተርዎ ላይ በጥንቃቄ ይቀመጣል። ኢንተርኔት ሲመለስ በራሱ ከደመናው (Cloud) ጋር ይመሳሰላል።"
-    },
-    {
-      qEn: "Can I access my reports on my phone?",
-      qAm: "ሪፖርቶችን በስልኬ ማግኘት እችላለሁ?",
-      aEn: "Absolutely! The web dashboard is fully mobile responsive and optimized for any smartphone or tablet. You can view all analytics, register transactions, and generate high-contrast PDF reports directly from your mobile browser.",
-      aAm: "በእርግጠኝነት! ሲስተሙ ሙሉ ለሙሉ ከማንኛውም ስልክ ወይም ታብሌት ጋር የሚስማማ (fully mobile responsive) ነው። በስልክዎ መተግበሪያውን በመክፈት ሽያጭ መመዝገብ፣ መረጃዎችን መከታተልና የፒዲኤፍ ሪፖርቶችን ማመንጨት ይችላሉ።"
-    },
-    {
-      qEn: "Do you offer training for my staff?",
-      qAm: "ለሰራተኞቼ ስልጠና ትሰጣላችሁ?",
-      aEn: "Yes, we provide comprehensive training, onboarding assistance, and ready-to-use digital manuals. We also offer interactive support through Telegram and Email to ensure your employees can quickly get comfortable with the dashboard and run operations smoothly.",
-      aAm: "አዎ፣ ለሰራተኞችዎ ዝርዝር ስልጠና፣ ዲጂታል መመሪያዎች እና አጠቃቀምን የሚያግዙ ቪዲዮዎችን እናቀርባለን። በተጨማሪም በቴሌግራም ወይም በኢሜይል ፈጣን እገዛ በማድረግ ሰራተኞችዎ ሲስተሙን በቀላሉ እንዲለምዱት እናደርጋለን።"
-    },
-    {
-      qEn: "How readable are the compiled daily sales PDF reports?",
-      qAm: "የሚወርዱት የፒዲኤፍ ሪፖርቶች ለማንበብ ምቹ ናቸው?",
-      aEn: "The daily PDF sales reports are designed to be extremely clean, professional, and accessible to everyone. They include summary cards, transaction tables with alternating rows, and official stamp sign-off lines.",
-      aAm: "የሚዘጋጁት የፒዲኤፍ ሪፖርቶች እጅግ ዘመናዊ፣ ግልጽና ለማንኛውም ሰው ለማንበብ ምቹ ሆነው የተሰሩ ናቸው። ማጠቃለያዎችንና ዝርዝር ሠንጠረዦችን ያካትታሉ።"
-    }
-  ];
-
+  // Modal Content Data definitions
   const docContent = {
     about: {
-      titleEn: "About Us",
-      titleAm: "ስለ እኛ",
+      titleEn: "About Habesha Tracker",
+      titleAm: "ስለ ሀበሻ ትራከር",
       icon: <Users className="w-6 h-6 text-emerald-500" />,
       contentEn: (
-        <div className="space-y-4 font-sans">
+        <div className="space-y-4 text-sm font-sans text-slate-600 dark:text-slate-300">
           <p className="leading-relaxed">
-            <strong>Habesha Tracker</strong> was founded with a single mission: to empower local businesses, retailers, wholesalers, and entrepreneurs across Ethiopia with modern, highly reliable, and accessible enterprise technology.
+            <strong>Habesha Tracker</strong> was founded in Addis Ababa with a bold mission: to provide world-class, extremely simple cloud technology for Ethiopian small and medium businesses.
           </p>
           <p className="leading-relaxed">
-            Our platform is built specifically to address local challenges—such as intermittent internet connectivity, diverse digital banking channels (like CBE Birr, Telebirr, Awash, Dashen, and private bank transfers), and localized business operations. We believe that professional bookkeeping and financial visibility should not require expensive, foreign ERP solutions.
+            Our app is custom-tailored to handle local merchant realities: poor internet speed, the explosion of mobile wallets (Telebirr, CBE Birr), and the need for straightforward debt and loan registers (የብድር መዝገብ). We believe accounting software shouldn't require complex corporate training.
           </p>
-          <p className="leading-relaxed">
-            That's why we crafted a high-performance, local-first platform designed to run smoothly on any device (including smartphones and tablets) while maintaining strong cloud security when online.
-          </p>
-          <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 mt-6">
-            <h5 className="font-bold text-slate-800 dark:text-white mb-1.5 text-xs uppercase tracking-wider">Our Core Vision</h5>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              To be the most trusted and simple-to-use business manager in Ethiopian commerce, helping merchants scale, prevent loan leakages, and track their stock valuations with absolute precision.
+          <div className="p-4 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-500/15 mt-6">
+            <h5 className="font-bold text-slate-900 dark:text-white mb-1.5 text-xs uppercase tracking-wider">Our Commitment</h5>
+            <p className="text-xs">
+              To remain 100% focused on local store success, to isolate customer data securely, and to deliver updates that make running physical shops easier every single day.
             </p>
           </div>
         </div>
       ),
       contentAm: (
-        <div className="space-y-4 font-sans">
+        <div className="space-y-4 text-sm font-sans text-slate-600 dark:text-slate-300">
           <p className="leading-relaxed">
-            <strong>ሀበሻ ትራከር</strong> የተመሰረተው በአንድ ትልቅ ዓላማ ነው፦ በኢትዮጵያ ውስጥ ያሉ የችርቻሮ ነጋዴዎችን፣ የጅምላ አከፋፋዮችን፣ ላኪዎችንና አነስተኛና መካከለኛ ንግዶችን በዘመናዊና እጅግ አስተማማኝ በሆነ የዲጂታል ቴክኖሎጂ ማብቃት።
+            <strong>ሀበሻ ትራከር</strong> በአዲስ አበባ የተቋቋመው በአንድ ትልቅ ዓላማ ነው፡ በኢትዮጵያ ውስጥ ላሉ አነስተኛ እና መካከለኛ የንግድ ድርጅቶች ዓለም አቀፍ ደረጃውን የጠበቀ እና እጅግ ቀላል የሆነ የደመና ቴክኖሎጂ ማቅረብ።
           </p>
           <p className="leading-relaxed">
-            የእኛ መተግበሪያ የተሰራው በተለይ የሀገር ውስጥ የገበያ ተግዳሮቶችን—እንደ ኢንተርኔት መቆራረጥ፣ የተለያዩ የዲጂታል ክፍያ መንገዶች (እንደ ሲቢኢ ብር፣ ቴሌብር፣ አዋሽ፣ ዳሽን እና የግል ባንክ ዝውውሮች) እና የአካባቢውን የንግድ ልማዶች ከግምት ውስጥ በሚስገባ መልኩ ነው። እኛ እናምናለን፤ ጥራት ያለው የሂሳብ አያያዝ ቴክኖሎጂ ውድ በሆኑ የውጭ ሲስተሞች ብቻ መገደብ የለበትም።
+            መተግበሪያችን በአካባቢው ያሉ ነጋዴዎችን ተጨባጭ ሁኔታ ከግምት ውስጥ ያስገባ ነው፡ የኢንተርኔት መቆራረጥን መቋቋም፣ የሞባይል ክፍያዎችን (ቴሌብር፣ CBE ብር) በቀላሉ መመዝገብ፣ እና የደንበኞችን የብድርና ዱቤ መዝገብ (የብድር መዝገብ) በቀላሉ መቆጣጠር። የሂሳብ አያያዝ ሶፍትዌር ረጅም ስልጠና መውሰድን መፈጸም የለበትም ብለን እናምናለን።
           </p>
-          <p className="leading-relaxed">
-            ለዚህም ነው ከማንኛውም ስልክና ኮምፒውተር ጋር በቀላሉ የሚስማማውን፣ ያለ ኢንተርኔት በከፊል (local-first) መስራት የሚችለውንና ከደመናው (Cloud) ጋር የሚጣጣመውን ሀበሻ ትራከርን ያዘጋጀነው።
-          </p>
-          <div className="p-4 bg-emerald-500/5 rounded-xl border border-emerald-500/10 mt-6">
-            <h5 className="font-bold text-slate-800 dark:text-white mb-1.5 text-xs uppercase tracking-wider">ዋነኛ ራእያችን</h5>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              በኢትዮጵያ የንግድ ዓለም ውስጥ እጅግ ተአማኒ እና ቀላል የንግድ መቆጣጠሪያ በመሆን፣ ነጋዴዎች ስራቸውን እንዲያስፋፉ፣ የብድር መዝገብ ስህተቶችን እንዲከላከሉ እና የዕቃ ክምችት ዋጋቸውን በትክክል እንዲያውቁ መርዳት።
+          <div className="p-4 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl border border-emerald-500/15 mt-6">
+            <h5 className="font-bold text-slate-900 dark:text-white mb-1.5 text-xs uppercase tracking-wider">ቃል ኪዳናችን</h5>
+            <p className="text-xs">
+              ለሀገር ውስጥ ሱቆች ስኬት 100% ትኩረት መስጠት፣ የደንበኞችን መረጃዎች በከፍተኛ ደህንነት መለየት እና የዕለታዊ የሽያጭ ስራዎችን የሚያቃልሉ ዝመናዎችን ዘወትር ማቅረብ።
             </p>
           </div>
         </div>
       )
     },
     contact: {
-      titleEn: "Contact Us",
-      titleAm: "ያግኙን",
-      icon: <Phone className="w-6 h-6 text-indigo-500" />,
+      titleEn: "Contact Our Addis Ababa Office",
+      titleAm: "የአዲስ አበባ ቢሮአችንን ያግኙ",
+      icon: <Phone className="w-6 h-6 text-blue-500" />,
       contentEn: (
-        <div className="space-y-6 font-sans">
-          <p className="leading-relaxed text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
-            Have a question, feedback, or want to arrange an on-site demonstration? Get in touch with our team through any of the options below. We are based in the heart of Addis Ababa and always ready to assist.
+        <div className="space-y-6 text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p className="leading-relaxed">
+            Have queries, feedback, or want a customized demonstration for your wholesale staff? Reach out directly.
           </p>
-          
           <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 shrink-0">
-                <Phone className="w-5 h-5" />
-              </div>
+            <div className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <Phone className="w-5 h-5 text-emerald-500 mt-1" />
               <div>
-                <h5 className="font-bold text-slate-800 dark:text-white text-sm">Direct Phone Inquiry</h5>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  +251 986 580 996
-                </p>
+                <h5 className="font-bold text-slate-900 dark:text-white text-sm">Customer Helpline</h5>
+                <p className="text-xs">+251 986 580 996</p>
                 <p className="text-[10px] text-slate-400 mt-0.5">Monday to Saturday: 8:30 AM – 6:30 PM (Local Time)</p>
               </div>
             </div>
-
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 shrink-0">
-                <Mail className="w-5 h-5" />
-              </div>
+            <div className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <Mail className="w-5 h-5 text-blue-500 mt-1" />
               <div>
-                <h5 className="font-bold text-slate-800 dark:text-white text-sm">Email Support</h5>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  support@habeshatracker.et
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">Average response time: &lt; 15 minutes</p>
+                <h5 className="font-bold text-slate-900 dark:text-white text-sm">Official Email</h5>
+                <p className="text-xs">support@habeshatracker.et</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <MapPin className="w-5 h-5 text-amber-500 mt-1" />
+              <div>
+                <h5 className="font-bold text-slate-900 dark:text-white text-sm">Office Location</h5>
+                <p className="text-xs">Bole, Medhanialem Area, Addis Ababa, Ethiopia</p>
               </div>
             </div>
           </div>
         </div>
       ),
       contentAm: (
-        <div className="space-y-6 font-sans">
-          <p className="leading-relaxed text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
-            ጥያቄ አለዎት ወይስ በቀጥታ የሲስተሙን አጠቃቀም ማሳያ እንዲቀርብልዎት ይፈልጋሉ? ከታች ባሉት የግንኙነት መንገዶች በሙሉ ሊያገኙን ይችላሉ። ቡድናችን ሁል ጊዜ እርስዎን ለመርዳት ዝግጁ ነው።
+        <div className="space-y-6 text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p className="leading-relaxed">
+            ጥያቄ፣ አስተያየት ካለዎት ወይም ለጅምላ ንግድ ድርጅትዎ ሰራተኞች ልዩ የአጠቃቀም ማሳያ እንዲዘጋጅልዎ ከፈለጉ በቀጥታ ያነጋግሩን።
           </p>
-          
           <div className="space-y-4">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 shrink-0">
-                <Phone className="w-5 h-5" />
-              </div>
+            <div className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <Phone className="w-5 h-5 text-emerald-500 mt-1" />
               <div>
-                <h5 className="font-bold text-slate-800 dark:text-white text-sm">በቀጥታ ስልክ መደወል</h5>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  0986580996
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">ከሰኞ እስከ ቅዳሜ፦ ከጠዋቱ 2:30 እስከ ምሽቱ 12:30</p>
+                <h5 className="font-bold text-slate-900 dark:text-white text-sm">የደንበኞች አገልግሎት ስልክ</h5>
+                <p className="text-xs">0986580996</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">ከሰኞ እስከ ቅዳሜ፡ ከጠዋቱ 2:30 እስከ ምሽቱ 12:30</p>
               </div>
             </div>
-
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300 shrink-0">
-                <Mail className="w-5 h-5" />
-              </div>
+            <div className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <Mail className="w-5 h-5 text-blue-500 mt-1" />
               <div>
-                <h5 className="font-bold text-slate-800 dark:text-white text-sm">ኢሜይል ድጋፍ</h5>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  support@habeshatracker.et
-                </p>
-                <p className="text-[10px] text-slate-400 mt-0.5">አማካይ የምላሽ ሰዓት፦ ከ15 ደቂቃ በታች</p>
+                <h5 className="font-bold text-slate-900 dark:text-white text-sm">ኢሜይል</h5>
+                <p className="text-xs">support@habeshatracker.et</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
+              <MapPin className="w-5 h-5 text-amber-500 mt-1" />
+              <div>
+                <h5 className="font-bold text-slate-900 dark:text-white text-sm">የቢሮ አድራሻ</h5>
+                <p className="text-xs">ቦሌ፣ መድኃኔዓለም አካባቢ፣ አዲስ አበባ፣ ኢትዮጵያ</p>
               </div>
             </div>
           </div>
@@ -290,24 +562,18 @@ export default function LandingPage({
       )
     },
     support: {
-      titleEn: "Technical Support & Telegram Helpdesk",
-      titleAm: "የቴክኒክ ድጋፍና ቴሌግራም",
+      titleEn: "Priority Technical Helpdesk & Telegram",
+      titleAm: "የቴክኒክ ድጋፍ እና የቴሌግራም እገዛ",
       icon: <MessageSquare className="w-6 h-6 text-sky-500" />,
       contentEn: (
-        <div className="space-y-6 font-sans">
-          <p className="leading-relaxed text-xs sm:text-sm">
-            We provide premium, 24/7 dedicated customer support. Whether you need help setting up your product catalog, backing up your databases, or resolving CBE/Telebirr reconciliations, our helpdesk is here.
+        <div className="space-y-6 text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p className="leading-relaxed">
+            We provide around-the-clock technical assistance. Whether setting up stock categories or exporting Excel files, we can support you instantly.
           </p>
-
           <div className="p-5 bg-sky-500/10 dark:bg-sky-500/5 border border-sky-500/20 rounded-2xl space-y-3">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-[#0088cc] shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.82-1.05 4.67-1.5 6.75-.1.45-.25.6-.45.62-.43.04-.76-.28-1.18-.55-.65-.43-1.02-.7-1.65-1.11-.73-.47-.26-.73.16-1.16.11-.11 2.02-1.85 2.06-2.02.01-.02.01-.1-.05-.15-.06-.05-.15-.03-.21-.02-.1.02-1.61 1.02-4.54 3.00-.43.3-.82.44-1.17.43-.39-.01-1.13-.22-1.68-.40-.68-.22-1.22-.34-1.17-.72.03-.2.3-.4.81-.61 3.17-1.38 5.29-2.29 6.36-2.73 3.03-1.26 3.66-1.48 4.07-1.49.09 0 .29.02.42.13.11.1.14.23.15.33-.01.07-.01.14-.02.2z" />
-              </svg>
-              <h5 className="font-bold text-slate-800 dark:text-white text-sm">Join Our Telegram Support (@Manbuza12)</h5>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              Connect directly with our support specialists and get instant answers inside Telegram. We offer automated stock alerts, manuals, and live chat.
+            <h5 className="font-bold text-slate-900 dark:text-white text-sm">Join Our Support Telegram (@Manbuza12)</h5>
+            <p className="text-xs leading-relaxed">
+              Connect with our live onboarding specialists in Addis Ababa for fast feedback, training manuals, and direct setups.
             </p>
             <div className="pt-2">
               <a 
@@ -321,41 +587,17 @@ export default function LandingPage({
               </a>
             </div>
           </div>
-
-          <div className="space-y-3">
-            <h5 className="font-bold text-slate-800 dark:text-white text-xs sm:text-sm">Additional Channels</h5>
-            <ul className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span><strong>Email Support</strong>: support@habeshatracker.et</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span><strong>Phone Helpdesk</strong>: +251 986 580 996</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span><strong>Staff Onboarding Assistance</strong>: Available for premium accounts.</span>
-              </li>
-            </ul>
-          </div>
         </div>
       ),
       contentAm: (
-        <div className="space-y-6 font-sans">
-          <p className="leading-relaxed text-xs sm:text-sm">
-            እኛ 24/7 ሙሉ ሰዓት የሚሰሩ የቴክኒክ ድጋፍ ባለሙያዎችን አሰልፈናል። የእርስዎን የዕቃዎች ዝርዝር ለመጫን፣ መረጃዎችን ኮፒ አድርጎ ለመያዝ (Backup) ወይም የቴሌብር/የባንክ መግለጫዎችን ለማስታረቅ እርዳታ ከፈለጉ ሁል ጊዜ ዝግጁ ነን።
+        <div className="space-y-6 text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p className="leading-relaxed">
+            ሙሉ የ24 ሰዓት የቴክኒክ ድጋፍ እናቀርባለን። የዕቃዎችን ምድብ ለማስተካከልም ሆነ የኤክሴል ሪፖርቶችን ለማውጣት በማንኛውም ጊዜ እናግዝዎታለን።
           </p>
-
           <div className="p-5 bg-sky-500/10 dark:bg-sky-500/5 border border-sky-500/20 rounded-2xl space-y-3">
-            <div className="flex items-center gap-3">
-              <svg className="w-6 h-6 text-[#0088cc] shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.82-1.05 4.67-1.5 6.75-.1.45-.25.6-.45.62-.43.04-.76-.28-1.18-.55-.65-.43-1.02-.7-1.65-1.11-.73-.47-.26-.73.16-1.16.11-.11 2.02-1.85 2.06-2.02.01-.02.01-.1-.05-.15-.06-.05-.15-.03-.21-.02-.1.02-1.61 1.02-4.54 3.00-.43.3-.82.44-1.17.43-.39-.01-1.13-.22-1.68-.40-.68-.22-1.22-.34-1.17-.72.03-.2.3-.4.81-.61 3.17-1.38 5.29-2.29 6.36-2.73 3.03-1.26 3.66-1.48 4.07-1.49.09 0 .29.02.42.13.11.1.14.23.15.33-.01.07-.01.14-.02.2z" />
-              </svg>
-              <h5 className="font-bold text-slate-800 dark:text-white text-sm">የቴሌግራም የቴክኒክ ድጋፍ ማዕከል (@Manbuza12)</h5>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              ከቴክኒክ ባለሙያዎቻችን ጋር በቀጥታ በመገናኘት በቴሌግራም ፈጣን መልስ ያግኙ። የተጠናቀቁ መመሪያዎችን፣ የስራ ማስጠንቀቂያዎችንና የቀጥታ ቻት እናቀርባለን።
+            <h5 className="font-bold text-slate-900 dark:text-white text-sm">የቴሌግራም ድጋፍ ማዕከል (@Manbuza12)</h5>
+            <p className="text-xs leading-relaxed">
+              በአዲስ አበባ ካሉ የድጋፍ ባለሙያዎቻችን ጋር በቴሌግራም በቀጥታ በመገናኘት ፈጣን ምላሾችን፣ የማስተማሪያ ቪዲዮዎችን እና መመሪያዎችን ያግኙ።
             </p>
             <div className="pt-2">
               <a 
@@ -364,207 +606,128 @@ export default function LandingPage({
                 rel="noreferrer"
                 className="inline-flex items-center justify-center px-4 py-2 bg-[#0088cc] hover:bg-[#0077b3] text-white text-xs font-bold rounded-xl transition duration-150 gap-2 shadow-md shadow-sky-500/20"
               >
-                ቴሌግራም ድጋፍን ክፈት (@Manbuza12)
+                ቴሌግራም ድጋፍ ክፈት (@Manbuza12)
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </a>
             </div>
-          </div>
-
-          <div className="space-y-3">
-            <h5 className="font-bold text-slate-800 dark:text-white text-xs sm:text-sm">ሌሎች የግንኙነት መንገዶች</h5>
-            <ul className="space-y-2 text-xs text-slate-500 dark:text-slate-400">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span><strong>ኢሜይል ድጋፍ</strong>: support@habeshatracker.et</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span><strong>የስልክ ድጋፍ</strong>: 0986580996</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span><strong>የሰራተኞች ስልጠና</strong>: ለፕሪሚየም ተጠቃሚዎች በአካል ቀርበን እናስተምራለን።</span>
-              </li>
-            </ul>
           </div>
         </div>
       )
     },
     terms: {
       titleEn: "Terms of Service",
-      titleAm: "የአጠቃቀም ውሎችና ደንቦች",
+      titleAm: "የአጠቃቀም ደንቦች",
       icon: <Shield className="w-6 h-6 text-amber-500" />,
       contentEn: (
-        <div className="space-y-4 text-xs sm:text-sm font-sans">
-          <p className="leading-relaxed">
-            Welcome to Habesha Tracker. By creating an account or accessing our cloud bookkeeping portal, you agree to comply with and be bound by the following Terms of Service.
-          </p>
-          <ol className="list-decimal pl-5 space-y-3 mt-4 text-slate-600 dark:text-slate-400">
-            <li>
-              <strong>License Grant</strong>: We grant you a revocable, non-exclusive, non-transferable license to use the Habesha Tracker software specifically for managing your physical or digital business transactions.
-            </li>
-            <li>
-              <strong>Accounting & Ledger Responsibility</strong>: While Habesha Tracker implements robust local databases and automatic client caching, the accuracy of the transactions (sales ledger, loan inputs, grain prices) remains solely your responsibility.
-            </li>
-            <li>
-              <strong>LocalStorage and Offline Cache</strong>: To guarantee 100% offline uptime, certain data points are cached inside your browser sandboxed workspace. Clearing browser caches, cookies, or formatting your device may delete unbacked-up logs. You are requested to use our single-click database backup feature regularly.
-            </li>
-            <li>
-              <strong>System Integrity</strong>: You agree not to attempt to reverse engineer, disrupt, or exploit any cloud resources hosted on Habesha Tracker endpoints.
-            </li>
-          </ol>
+        <div className="space-y-4 text-xs sm:text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p>By registering on Habesha Tracker, you agree to comply with our localized cloud service terms:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Data Integrity</strong>: You are solely responsible for all inventory items, costs, selling prices, and customer debts recorded in your workspace.</li>
+            <li><strong>Licensing</strong>: We grant a personal, non-transferable license to manage your business databases online on our secure environment.</li>
+            <li><strong>Usage Limitations</strong>: Reverse-engineering or spamming the server framework API is strictly prohibited.</li>
+          </ul>
         </div>
       ),
       contentAm: (
-        <div className="space-y-4 text-xs sm:text-sm font-sans">
-          <p className="leading-relaxed">
-            ወደ ሀበሻ ትራከር እንኳን በደህና መጡ። መለያ በመፍጠር ወይም የእኛን የደመና ERP ሲስተም በመጠቀም በሚከተሉት የአጠቃቀም ውሎችና ደንቦች ለመገዛት ተስማምተዋል።
-          </p>
-          <ol className="list-decimal pl-5 space-y-3 mt-4 text-slate-600 dark:text-slate-400">
-            <li>
-              <strong>የአጠቃቀም ፈቃድ</strong>: የእርስዎን የግል የንግድ እንቅስቃሴ ለመከታተልና ለመቆጣጠር የሀበሻ ትራከር ሶፍትዌርን በነጻ ወይም በክፍያ እንዲጠቀሙ የግል ፍቃድ ሰጥተንዎታል።
-            </li>
-            <li>
-              <strong>የመረጃዎች ትክክለኛነት</strong>: መተግበሪያው ዘመናዊ የሂሳብ ስሌቶችን የሚያከናውን ቢሆንም፣ በሲስተሙ ላይ የሚገቡት መረጃዎች (ሽያጭ፣ ክምችት፣ የብድር ሂሳቦች) ትክክለኛነት ሙሉ በሙሉ የእርስዎ ኃላፊነት ነው።
-            </li>
-            <li>
-              <strong>የብሮውዘር መረጃ ቁጠባ (LocalStorage)</strong>: መተግበሪያው ያለ ኢንተርኔት በከፍተኛ ፍጥነት እንዲሰራ መረጃዎችን በብሮውዘርዎ ላይ ስለሚይዝ፣ ብሮውዘርዎን በሚያፀዱበት ጊዜ ወይም ኮምፒውተሩን በሚቀይሩበት ጊዜ መረጃ እንዳይጠፋ አዘውትረው የመጠባበቂያ ፋይል (Backup) እንዲያወርዱ ይመከራል።
-            </li>
-            <li>
-              <strong>የሲስተሙ ደህንነት</strong>: የሀበሻ ትራከርን የደመና ሲስተም ለማወክ ወይም የደህንነት ቅንብሮችን ለመጣስ መሞከር በጥብቅ የተከለከለ ነው።
-            </li>
-          </ol>
+        <div className="space-y-4 text-xs sm:text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p>በሀበሻ ትራከር ላይ በመመዝገብ፣ በሚከተሉት የአጠቃቀም ደንቦች ለመገዛት ተስማምተዋል፡</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>የመረጃ ትክክለኛነት</strong>: በዳሽቦርድዎ ላይ ለሚመዘገቡት ምርቶች፣ ዋጋዎች፣ ሽያጮች እና የደንበኛ እዳዎች (ዱቤ) ትክክለኛነት ሙሉ ኃላፊነት የእርስዎ ነው።</li>
+            <li><strong>አጠቃቀም</strong>: ንግድዎን በዘመናዊ የደመና ሲስተም ውስጥ በጥንቃቄ ለማስተዳደር የግል እና የማይተላለፍ ፈቃድ ተሰጥቶዎታል።</li>
+            <li><strong>ማዕቀቦች</strong>: የደመና አገልጋዮችን (servers) ወይም ሲስተሙን ለማወክ መሞከር በጥብቅ የተከለከለ ነው።</li>
+          </ul>
         </div>
       )
     },
     privacy: {
-      titleEn: "Privacy Policy",
-      titleAm: "የግል መረጃ ጥበቃ ፖሊሲ",
+      titleEn: "Privacy & Commercial Secrecy Policy",
+      titleAm: "የግል እና የንግድ ሚስጥር ጥበቃ ፖሊሲ",
       icon: <Shield className="w-6 h-6 text-emerald-500" />,
       contentEn: (
-        <div className="space-y-4 text-xs sm:text-sm font-sans">
-          <p className="leading-relaxed">
-            Your commercial secrecy and business privacy is our absolute core value. This Privacy Policy documents how your transactions, logs, and email configurations are securely stored:
-          </p>
-          <ol className="list-decimal pl-5 space-y-3 mt-4 text-slate-600 dark:text-slate-400">
-            <li>
-              <strong>Client-Side Processing</strong>: To prevent data leaks and state intervention, your proprietary business transaction records (such as customer loan lists, grains inventories, cash on hand) are processed on your device. We do not inspect, sell, or parse your accounting logs.
-            </li>
-            <li>
-              <strong>Authentication Security</strong>: Your basic login metadata is strictly protected via industry-standard Supabase identity keys.
-            </li>
-            <li>
-              <strong>Zero Advertising</strong>: Habesha Tracker is supported strictly by subscription models. We never host advertising tracking tags or share business metrics with external marketing conglomerates.
-            </li>
-            <li>
-              <strong>Database Portability</strong>: You maintain the absolute right to export or delete your local sandboxed database with a single click.
-            </li>
-          </ol>
+        <div className="space-y-4 text-xs sm:text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p>Your commercial logs are completely secure. We treat store privacy as our primary corporate values:</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>Zero Inspection</strong>: We do not parse, analyze, or sell your product inventories, customer credit logs, or net profits.</li>
+            <li><strong>No Ad Trackers</strong>: We do not serve advertisements and we do not participate in marketing tracker networks.</li>
+            <li><strong>Database Exportability</strong>: You maintain the absolute right to export your products or delete your account in full with one click.</li>
+          </ul>
         </div>
       ),
       contentAm: (
-        <div className="space-y-4 text-xs sm:text-sm font-sans">
-          <p className="leading-relaxed">
-            የንግድ ስራዎ ሚስጥራዊነት መጠበቅ ለእኛ የመጨረሻው ትልቅ ዋጋችን ነው። የእርስዎን የግብይትና የግል መረጃዎች እንዴት እንደምንጠብቅ ከታች ተዘርዝሯል፦
-          </p>
-          <ol className="list-decimal pl-5 space-y-3 mt-4 text-slate-600 dark:text-slate-400">
-            <li>
-              <strong>መረጃዎ ለርስዎ ብቻ</strong>: በሲስተሙ ላይ የሚመዘግቧቸው የሽያጭ፣ የክምችት፣ የብድርና የባንክ መረጃዎች በሙሉ በብሮውዘርዎ ላይ የሚሰሩ ሲሆን፣ መረጃዎን እኛ ማንበብ ወይም ለሌሎች የንግድ ድርጅቶች መሸጥ አንችልም።
-            </li>
-            <li>
-              <strong>የመለያ ደህንነት</strong>: የእርስዎን የመለያ መረጃዎች (ኢሜይል፣ የይለፍ ቃልና ቅንብሮች) በኢንዱስትሪ ደረጃ ተቀባይነት ባለው በSupabase ቴክኖሎጂ አማካኝነት እንጠብቃለን።
-            </li>
-            <li>
-              <strong>ማስታወቂያዎችን አናሳይም</strong>: መተግበሪያው የሚተዳደረው በደንበኝነት ክፍያ ስለሆነ፣ የእርስዎን የሽያጭ ሁኔታዎች የሚከታተሉ የውጭ ማስታወቂያ ሰሪ ኮዶችን ሲስተማችን ውስጥ በፍጹም አናስገባም።
-            </li>
-            <li>
-              <strong>መረጃ የመውሰድ መብት</strong>: በማንኛውም ሰዓት መረጃዎን በፒዲኤፍ ወይም በኤክሴል ማውረድ ወይም መለያዎን ሙሉ በሙሉ መሰረዝ ይችላሉ።
-            </li>
-          </ol>
+        <div className="space-y-4 text-xs sm:text-sm font-sans text-slate-600 dark:text-slate-300">
+          <p>የንግድ መዝገቦችዎ ፍጹም ሚስጥራዊ ናቸው። የንግድ መረጃዎን መጠበቅ ዋነኛ መርሐችን ነው፡</p>
+          <ul className="list-disc pl-5 space-y-2">
+            <li><strong>ቁጥጥር የለም</strong>: የእርስዎን ምርቶች፣ የደንበኛ የዱቤ ዝርዝሮች ወይም የተጣራ ትርፍ መረጃዎች እኛ አናይም፣ ለሌላም አናስተላልፍም።</li>
+            <li><strong>ከማስታወቂያ ነጻ</strong>: ምንም አይነት ማስታወቂያዎች ወይም የመከታተያ ኮዶች በሲስተማችን ውስጥ የሉም።</li>
+            <li><strong>የመረጃ ባለቤትነት</strong>: በማንኛውም ሰዓት መረጃዎን በፒዲኤፍ ማውረድ ወይም መለያዎን ሙሉ በሙሉ ማጥፋት ይችላሉ።</li>
+          </ul>
         </div>
       )
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       
-      {/* 1. STICKY NAVIGATION */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/70 dark:bg-[#0F172A]/70 border-b border-slate-100 dark:border-slate-800 transition-colors">
+      {/* 1. PREMIUM HEADER */}
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-[#0B0F19]/80 border-b border-slate-200/50 dark:border-slate-900/60 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           
-          {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <svg className="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" id="logo-svg-landing">
+          {/* Logo Brand Block */}
+          <div className="flex items-center gap-3">
+            <svg className="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" id="logo-svg-saas">
               <defs>
-                <linearGradient id="logo-grad-landing" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#10b981" />
-                  <stop offset="100%" stopColor="#059669" />
+                <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#16A34A" /> {/* Emerald Green */}
+                  <stop offset="100%" stopColor="#2563EB" /> {/* Royal Blue */}
                 </linearGradient>
-                <linearGradient id="gold-grad-landing" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="100%" stopColor="#f59e0b" />
+                <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#F59E0B" /> {/* Gold */}
+                  <stop offset="100%" stopColor="#D97706" />
                 </linearGradient>
               </defs>
-              <rect width="40" height="40" rx="10" fill="url(#logo-grad-landing)" />
-              <rect x="11" y="10" width="5" height="20" rx="1.5" fill="white" />
-              <rect x="24" y="10" width="5" height="20" rx="1.5" fill="white" />
-              <rect x="15" y="18.5" width="10" height="3" fill="white" />
-              <path d="M 16 20 L 20 16 L 24 20 L 20 24 Z" fill="url(#gold-grad-landing)" />
+              <rect width="40" height="40" rx="12" fill="url(#primary-grad)" />
+              {/* Clean abstract 'H' & Chart combo representing Habesha Tracker */}
+              <rect x="11" y="10" width="4" height="20" rx="1" fill="white" />
+              <rect x="25" y="10" width="4" height="20" rx="1" fill="white" />
+              <rect x="15" y="18" width="10" height="4" fill="white" />
+              <circle cx="20" cy="20" r="4" fill="url(#gold-grad)" />
             </svg>
             <div>
-              <span className="font-bold tracking-tight text-slate-950 dark:text-white text-lg">Habesha Tracker</span>
-              <span className="text-[9px] block font-semibold text-emerald-500 uppercase tracking-widest leading-none">ERP SUITE</span>
+              <span className="font-bold tracking-tight text-slate-900 dark:text-white text-base sm:text-lg block leading-tight font-sans">
+                Habesha Tracker
+              </span>
             </div>
           </div>
 
-          {/* Nav Items - Desktop */}
-          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">
-            <a href="#features" className="hover:text-emerald-500 transition-colors">{isAmharic ? "ልዩ ባህሪያት" : "Features"}</a>
-            <a href="#why-choose-us" className="hover:text-emerald-500 transition-colors">{isAmharic ? "ለምን መረጡን" : "Why Us"}</a>
-            <a href="#faq" className="hover:text-emerald-500 transition-colors">{isAmharic ? "ጥያቄዎች" : "FAQ"}</a>
-            <button onClick={() => setActiveDocument('about')} className="hover:text-emerald-500 transition-colors cursor-pointer focus:outline-hidden">{isAmharic ? "ስለ እኛ" : "About Us"}</button>
-            <button onClick={() => setActiveDocument('contact')} className="hover:text-emerald-500 transition-colors cursor-pointer focus:outline-hidden">{isAmharic ? "ያግኙን" : "Contact Us"}</button>
-            <button onClick={() => setActiveDocument('support')} className="hover:text-emerald-500 transition-colors cursor-pointer focus:outline-hidden text-emerald-600 dark:text-emerald-400 font-semibold">{isAmharic ? "እገዛ & ቴሌግራም" : "Support"}</button>
-          </nav>
-
-          {/* Quick Toolbar */}
+          {/* Quick SaaS Control Toolbar */}
           <div className="flex items-center gap-3">
-            {/* Lang switcher */}
+            {/* Localized Language Switcher */}
             <button 
               onClick={toggleLanguage}
-              className="px-2 py-1 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-200"
-              title="Switch Language"
-              id="lang-toggle-landing"
+              className="px-2.5 py-1 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-700 dark:text-slate-200 flex items-center gap-1 cursor-pointer"
+              title="Switch Language / ቋንቋ ለመቀየር"
+              id="btn-lang-toggle"
             >
-              {isAmharic ? "EN" : "አማ"}
+              <Globe className="w-3.5 h-3.5 text-slate-400" />
+              <span>{isAmharic ? "English" : "አማርኛ"}</span>
             </button>
 
-            {/* Theme switcher */}
-            <button 
-              onClick={toggleTheme}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition"
-              title="Toggle Theme"
-              id="theme-toggle-landing"
-            >
-              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-500" />}
-            </button>
-
-            {/* App Launchers */}
+            {/* Account CTA Group */}
             <button 
               onClick={handleLogin}
-              className="hidden sm:inline-flex items-center text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-emerald-500 dark:hover:text-emerald-400 transition"
-              id="btn-login-landing"
+              className="hidden sm:inline-flex items-center text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition py-2 px-3"
+              id="btn-login"
             >
-              {isAmharic ? "ግባ" : "Log In"}
+              {t.nav.logIn}
             </button>
 
             <button 
               onClick={handleSignUp}
-              className="inline-flex items-center justify-center px-4 py-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 hover:-translate-y-0.5 transition duration-150"
-              id="btn-signup-landing"
+              className="inline-flex items-center justify-center px-4 py-2 text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition duration-150 cursor-pointer border border-transparent"
+              id="btn-signup"
             >
-              {isAmharic ? "በነጻ ይጀምሩ" : "Start Free Trial"}
+              <span>{t.nav.startTrial}</span>
               <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
             </button>
           </div>
@@ -572,429 +735,499 @@ export default function LandingPage({
         </div>
       </header>
 
-      {/* 2. HERO SECTION */}
-      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-32">
-        {/* Soft floating colored background glow */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/3 left-1/4 w-[350px] h-[350px] bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
-
+      {/* 2. MODERN SAAS HERO SECTION */}
+      <section className="relative overflow-hidden pt-12 pb-20 lg:pt-24 lg:pb-32 bg-radial-gradient from-white to-slate-50 dark:from-[#0B0F19] dark:to-[#080B12]">
+        
+        {/* Soft background radial visual overlays */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
             
-            {/* Hero Left Content */}
+            {/* Hero text information column */}
             <div className="lg:col-span-5 text-center lg:text-left space-y-6">
               
+              {/* Micro pill badge */}
+              <div className="inline-flex items-center gap-1.5 bg-emerald-100/60 dark:bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full text-emerald-800 dark:text-emerald-400 text-xs font-bold leading-none mx-auto lg:mx-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                <span>{t.hero.badge}</span>
+              </div>
 
-
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-950 dark:text-white leading-tight tracking-tight">
-                {isAmharic ? "ንግድዎን " : "Track. Manage."} <br />
-                <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-500 bg-clip-text text-transparent">
-                  {isAmharic ? "ይቆጣጠሩ፣ ያሳድጉ!" : "Grow Your Business."}
+              {/* Main Headline */}
+              <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-950 dark:text-white leading-tight tracking-tight">
+                <span className="bg-gradient-to-r from-emerald-600 via-teal-500 to-blue-600 bg-clip-text text-transparent">
+                  {t.hero.title}
                 </span>
               </h1>
 
-              <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0">
-                {isAmharic 
-                  ? "የሀበሻ ትራከር የዕቃ ክምችት፣ ፈጣን ሽያጭ፣ የባንክና ጥሬ ገንዘብ ፍሰት፣ ወጪዎችና ብድሮችን በአንድ ቦታ የሚቆጣጠሩበት ዘመናዊ የኢንተርፕራይዝ ሲስተም ነው።"
-                  : "The complete inventory, sales, finance, expense, and business management solution built specifically for Ethiopian retail, grains, tech, and service sectors."
-                }
+              {/* Subheadline description */}
+              <p className="text-slate-500 dark:text-slate-400 text-xs xs:text-sm sm:text-base leading-relaxed max-w-lg mx-auto lg:mx-0 font-medium">
+                {t.hero.subtitle}
               </p>
 
+              {/* Hero Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start pt-2">
                 <button 
                   onClick={handleSignUp}
-                  className="px-6 py-3.5 rounded-xl text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-xl shadow-emerald-500/20 hover:shadow-emerald-500/30 transition duration-150 flex items-center justify-center gap-2"
-                  id="btn-hero-cta-trial"
+                  className="px-8 py-4 rounded-xl text-sm font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl shadow-emerald-600/20 hover:shadow-emerald-600/30 transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
+                  id="btn-hero-signup"
                 >
-                  {isAmharic ? "በነጻ መጠቀም ይጀምሩ" : "Start Free Trial"}
+                  <span>{t.hero.ctaStart}</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
-                <button 
-                  onClick={handleLogin}
-                  className="px-6 py-3.5 rounded-xl text-sm font-bold bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition duration-150 flex items-center justify-center gap-2"
-                  id="btn-hero-cta-dashboard"
+                <a 
+                  href="#mockup-simulation"
+                  className="px-6 py-4 rounded-xl text-sm font-extrabold bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition duration-150 flex items-center justify-center gap-2"
                 >
-                  {isAmharic ? "ዳሽቦርድን ይጎብኙ" : "Explore ERP Dashboard"}
-                  <ArrowUpRight className="w-4 h-4 text-slate-400" />
-                </button>
+                  <span>{t.hero.ctaDemo}</span>
+                  <ArrowRightLeft className="w-4 h-4 text-slate-400" />
+                </a>
               </div>
 
-
-
-              {/* Badges / Micro proof */}
-              <div className="pt-6 flex items-center justify-center lg:justify-start gap-6 text-slate-400 dark:text-slate-500">
-                <div className="flex items-center gap-1">
-                  <Check className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-semibold">{isAmharic ? "ክሬዲት ካርድ አያስፈልግም" : "No credit card"}</span>
+              {/* Horizontal Trust badges row */}
+              <div className="pt-8 grid grid-cols-2 gap-4 border-t border-slate-200/50 dark:border-slate-900/60 text-slate-500 dark:text-slate-400 max-w-md mx-auto lg:mx-0">
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="text-emerald-500">🔒</span>
+                  <span>{t.hero.badgeSecure}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Check className="w-4 h-4 text-emerald-500" />
-                  <span className="text-xs font-semibold">{isAmharic ? "100% ደህንነቱ የተጠበቀ" : "Offline backup sync"}</span>
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="text-emerald-500">☁</span>
+                  <span>{t.hero.badgeBackup}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="text-emerald-500">📱</span>
+                  <span>{t.hero.badgeDevices}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-bold">
+                  <span className="text-emerald-500">🇪🇹</span>
+                  <span>{t.hero.badgeLocal}</span>
                 </div>
               </div>
 
             </div>
 
-            {/* Hero Right Floating Mockup Visuals */}
-            <div className="lg:col-span-7 relative">
-              <div className="relative mx-auto max-w-lg lg:max-w-none w-full bg-gradient-to-tr from-emerald-500/5 to-indigo-500/5 p-4 sm:p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 shadow-2xl backdrop-blur-3xl">
+            {/* Hero Right Visual Column: Modern business dashboard mockup with charts, inventory, sales, and analytics */}
+            <div className="lg:col-span-7 relative" id="mockup-simulation">
+              
+              <div className="relative mx-auto max-w-lg lg:max-w-none w-full bg-white dark:bg-slate-900/40 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800/80 shadow-2xl backdrop-blur-md">
                 
-                {/* Decorative glows inside mockup border */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl" />
+                {/* Decorative gradients */}
+                <div className="absolute -top-3 -right-3 w-32 h-32 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
+                <div className="absolute -bottom-3 -left-3 w-32 h-32 bg-emerald-500/10 rounded-full blur-xl pointer-events-none" />
 
-                {/* Dashboard Frame Bar */}
-                <div className="flex items-center justify-between pb-4 border-b border-slate-200/60 dark:border-slate-800/80 mb-4">
-                  <div className="flex items-center gap-2">
+                {/* Dashboard mock browser frame bar */}
+                <div className="flex items-center justify-between pb-4 border-b border-slate-200/60 dark:border-slate-800/80 mb-5">
+                  <div className="flex items-center gap-1.5">
                     <span className="w-3 h-3 rounded-full bg-rose-400 block" />
                     <span className="w-3 h-3 rounded-full bg-amber-400 block" />
                     <span className="w-3 h-3 rounded-full bg-emerald-400 block" />
                   </div>
-                  <div className="bg-slate-200/50 dark:bg-slate-800/50 px-6 py-1 rounded-lg text-[10px] font-mono text-slate-500 dark:text-slate-400 select-none">
-                    demo.habeshatracker.et/dashboard
+                  <div className="bg-slate-100 dark:bg-slate-800/50 px-4 py-1 rounded-lg text-[10px] font-mono text-slate-500 dark:text-slate-400 select-none border border-slate-200/30 dark:border-slate-800/30">
+                    habeshatracker.et/demo
                   </div>
-                  <div className="w-12 h-2" />
+                  <div className="w-12 h-1" />
                 </div>
 
-                {/* Core Live Dashboard Mockup Grid */}
+                {/* Simulated live telemetry metrics */}
                 <div className="space-y-4">
                   
-                  {/* Top Stats boxes row */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl shadow-xs">
-                      <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">TODAY'S REVENUE</span>
-                      <p className="text-sm font-bold text-slate-900 dark:text-white mt-1">14,230 Br</p>
-                      <span className="text-[9px] text-emerald-500 font-semibold flex items-center gap-0.5 mt-0.5">
-                        ↑ 12% <span className="text-[8px] text-slate-400 dark:text-slate-500 font-normal">vs yesterday</span>
-                      </span>
+                  {/* Top Stats Cards Row */}
+                  <div className="grid grid-cols-3 gap-1.5 xs:gap-3">
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 p-2 xs:p-3 rounded-xl xs:rounded-2xl shadow-xs flex flex-col justify-between min-h-[75px] xs:min-h-[85px]">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[8px] xs:text-[9px] font-extrabold uppercase tracking-widest text-slate-400 block leading-none">
+                          {t.mockup.revenue}
+                        </span>
+                        <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 flex items-center justify-center shrink-0">
+                          <span className="text-[10px]" role="img" aria-label="cash">💵</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs xs:text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-0.5 font-mono">
+                          14,230 Br
+                        </p>
+                        <span className="text-[8px] xs:text-[9px] text-emerald-600 font-bold flex items-center gap-0.5 mt-0.5 leading-none">
+                          ↑ 12.4%
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl shadow-xs">
-                      <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">BANK BALANCE</span>
-                      <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400 mt-1">320,000 Br</p>
-                      <span className="text-[8px] text-slate-400 font-medium">CBE / Telebirr</span>
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 p-2 xs:p-3 rounded-xl xs:rounded-2xl shadow-xs flex flex-col justify-between min-h-[75px] xs:min-h-[85px]">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[8px] xs:text-[9px] font-extrabold uppercase tracking-widest text-slate-400 block leading-none">
+                          {t.mockup.bankBal}
+                        </span>
+                        <img 
+                          src="https://vectorseek.com/wp-content/uploads/2026/04/Commercial-Bank-of-Ethiopia-Logo-PNG-SVG-Vector-01.png" 
+                          className="w-5 h-5 object-contain rounded-xs shrink-0" 
+                          alt="CBE" 
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs xs:text-sm sm:text-base font-extrabold text-blue-600 dark:text-blue-400 mt-0.5 font-mono">
+                          320,000 Br
+                        </p>
+                        <span className="text-[7px] xs:text-[8px] text-slate-400 font-medium block mt-0.5 leading-none truncate">
+                          CBE
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl shadow-xs">
-                      <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">STOCK VALUE</span>
-                      <p className="text-sm font-bold text-indigo-500 mt-1">745,000 Br</p>
-                      <span className="text-[8px] text-rose-500 font-medium font-mono">14 low stock alerts</span>
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 p-2 xs:p-3 rounded-xl xs:rounded-2xl shadow-xs flex flex-col justify-between min-h-[75px] xs:min-h-[85px]">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <span className="text-[8px] xs:text-[9px] font-extrabold uppercase tracking-widest text-slate-400 block leading-none">
+                          {t.mockup.stockVal}
+                        </span>
+                        <img 
+                          src="https://cdn.brandfetch.io/idAe1C3sxm/w/400/h/400/theme/light/icon.png" 
+                          className="w-5 h-5 object-contain rounded-xs shrink-0" 
+                          alt="Telebirr" 
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.src = "https://cdn.brandfetch.io/idAe1C3sxm/theme/light/logo.svg";
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs xs:text-sm sm:text-base font-extrabold text-amber-500 mt-0.5 font-mono">
+                          745,000 Br
+                        </p>
+                        <span className="text-[7px] xs:text-[8px] text-rose-500 font-bold block mt-0.5 leading-none truncate">
+                          telebirr
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Dynamic interactive widget showcase */}
-                  <div className="bg-slate-100/50 dark:bg-slate-950/50 border border-slate-200/50 dark:border-slate-800/80 p-4 rounded-2xl">
-                    <div className="flex justify-between items-center mb-3">
-                      <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                        <Activity className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
-                        {isAmharic ? "የቀጥታ ስሌት መግብያ (Interactive Demo)" : "Interactive Pricing Widget"}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[9px] font-bold">
-                        Calculated Real-Time
+                  {/* Interactive Pricing/Profits Ledger Simulator */}
+                  <div className="bg-slate-50 dark:bg-[#111827] border border-slate-200/70 dark:border-slate-800/80 p-4 rounded-2xl">
+                    
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[8px] font-bold uppercase tracking-wider block w-fit mb-1 leading-none">
+                          {t.mockup.badgeText}
+                        </span>
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-white leading-tight">
+                          {t.mockup.title}
+                        </h4>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-snug font-medium">
+                          {t.mockup.subtitle}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-emerald-500 font-mono font-bold shrink-0 ml-2">
+                        100% Client Sync
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                          {isAmharic ? "የሽያጭ ዋጋ (Br)" : "Sale Amount (ETB)"}
+                    {/* Dual sliders */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
+                          {t.mockup.saleAmount}
                         </label>
                         <input 
                           type="range" 
                           min="1000" 
-                          max="20000" 
-                          step="250"
+                          max="25000" 
+                          step="500"
                           value={demoSaleAmount}
                           onChange={(e) => setDemoSaleAmount(Number(e.target.value))}
-                          className="w-full accent-emerald-500 cursor-ew-resize"
+                          className="w-full accent-emerald-500 cursor-ew-resize h-1 bg-slate-200 dark:bg-slate-800 rounded-lg"
                         />
-                        <div className="text-xs font-mono font-bold text-slate-800 dark:text-white">
+                        <div className="text-sm font-mono font-extrabold text-slate-900 dark:text-white">
                           {demoSaleAmount.toLocaleString()} Br
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                          {isAmharic ? "የትርፍ መጠን (%)" : "Profit margin (%)"}
+                      <div className="space-y-1.5">
+                        <label className="block text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">
+                          {t.mockup.profitMargin}
                         </label>
                         <input 
                           type="range" 
-                          min="1" 
+                          min="5" 
                           max="40" 
                           step="1"
-                          value={demoCommission}
-                          onChange={(e) => setDemoCommission(Number(e.target.value))}
-                          className="w-full accent-indigo-500 cursor-ew-resize"
+                          value={demoProfitMargin}
+                          onChange={(e) => setDemoProfitMargin(Number(e.target.value))}
+                          className="w-full accent-blue-600 cursor-ew-resize h-1 bg-slate-200 dark:bg-slate-800 rounded-lg"
                         />
-                        <div className="text-xs font-mono font-bold text-slate-800 dark:text-white">
-                          {demoCommission}%
+                        <div className="text-sm font-mono font-extrabold text-slate-900 dark:text-white">
+                          {demoProfitMargin}%
                         </div>
                       </div>
                     </div>
 
-                    {/* Calculated output */}
-                    <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between">
+                    {/* Simulation Calculations Input Form */}
+                    <form onSubmit={handleAddMockSale} className="mt-4 pt-3 border-t border-slate-200/50 dark:border-slate-800/80 grid grid-cols-2 gap-2">
+                      <input 
+                        type="text" 
+                        placeholder={isAmharic ? "ደንበኛ ስም (ለምሳሌ፦ አልማዝ)" : "Customer name"} 
+                        value={inputName}
+                        onChange={(e) => setInputName(e.target.value)}
+                        className="px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-hidden focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400"
+                      />
+                      <input 
+                        type="text" 
+                        placeholder={isAmharic ? "ዕቃ ዓይነት (ለምሳሌ፦ ጤፍ)" : "Product item"} 
+                        value={inputItem}
+                        onChange={(e) => setInputItem(e.target.value)}
+                        className="px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-hidden focus:border-emerald-500 text-slate-900 dark:text-white placeholder-slate-400"
+                      />
+                      <button 
+                        type="submit"
+                        className="col-span-2 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        <CheckCircle className="w-3.5 h-3.5" />
+                        <span>{t.mockup.recordBtn}</span>
+                      </button>
+                    </form>
+
+                    {/* Calculated Output Display Box */}
+                    <div className="mt-4 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/50 dark:border-slate-800/60 flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] text-slate-400 block font-semibold uppercase">Net profit</span>
-                        <span className="text-sm font-extrabold text-slate-900 dark:text-white font-mono">
-                          {((demoSaleAmount * demoCommission) / 100).toFixed(2)} Br
+                        <span className="text-[9px] text-slate-400 block font-extrabold uppercase tracking-wider">
+                          {t.mockup.estimatedProfit}
+                        </span>
+                        <span className="text-base font-extrabold text-slate-900 dark:text-white font-mono">
+                          {((demoSaleAmount * demoProfitMargin) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Br
                         </span>
                       </div>
-                      <button 
-                        onClick={handleSignUp}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-600 transition"
-                      >
-                        {isAmharic ? "እዚህ ይመዝግቡ" : "Record in Ledger"}
-                        <ArrowUpRight className="w-3 h-3" />
-                      </button>
+                      <div className="text-right">
+                        <span className="text-[9px] text-slate-400 block font-extrabold uppercase tracking-wider">Store Margin</span>
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 font-mono">
+                          +{(demoProfitMargin).toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
+
                   </div>
 
-                  {/* Realistic Recent Sales ledger */}
-                  <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden shadow-xs">
-                    <div className="px-3.5 py-2 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Latest Completed Transactions</span>
+                  {/* Mock live transaction entries */}
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl overflow-hidden">
+                    <div className="px-4 py-2 border-b border-slate-200/60 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">
+                        {t.mockup.latestSales}
+                      </span>
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                     </div>
-                    <div className="p-1.5 space-y-1">
-                      <div className="flex items-center justify-between text-[11px] p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">C</div>
-                          <div>
-                            <p className="font-bold text-slate-800 dark:text-white">Almaz Bekele</p>
-                            <p className="text-[9px] text-slate-400">Grains (Red Teff) x3 bags</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-mono font-bold text-slate-900 dark:text-white">+11,400 Br</p>
-                          <span className="text-[8px] px-1 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-bold">Bank Transfer</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[11px] p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-[10px] font-bold">K</div>
-                          <div>
-                            <p className="font-bold text-slate-800 dark:text-white">Kedir Yusuf</p>
-                            <p className="text-[9px] text-slate-400">Premium Barley Premium x5</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-mono font-bold text-slate-900 dark:text-white">+8,250 Br</p>
-                          <span className="text-[8px] px-1 py-0.2 rounded bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 font-bold">Cash</span>
-                        </div>
-                      </div>
+                    
+                    <div className="p-2 space-y-1.5 max-h-40 overflow-y-auto">
+                      <AnimatePresence initial={false}>
+                        {mockSales.map((sale, i) => (
+                          <motion.div 
+                            key={i + "-" + sale.name}
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="flex items-center justify-between text-xs p-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-lg bg-emerald-100/80 dark:bg-emerald-950 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-extrabold">
+                                {sale.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-extrabold text-slate-900 dark:text-white leading-tight">{sale.name}</p>
+                                <p className="text-[10px] text-slate-400 leading-tight">{sale.item}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-mono font-extrabold text-slate-900 dark:text-white">+{sale.amount.toLocaleString()} Br</p>
+                              <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-extrabold ${
+                                sale.method === 'telebirr' 
+                                  ? 'bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400' 
+                                  : sale.method === 'bank' 
+                                    ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400'
+                                    : 'bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400'
+                              }`}>
+                                {sale.method === 'telebirr' ? t.mockup.telebirr : sale.method === 'bank' ? t.mockup.bankTransfer : t.mockup.cash}
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
                     </div>
+
                   </div>
 
                 </div>
 
               </div>
 
-              {/* Mini floating labels */}
-              <div className="absolute -top-4 -left-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 shadow-xl animate-bounce duration-1000 hidden sm:flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+              {/* Floating aesthetic labels */}
+              <div className="absolute -top-4 -left-4 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 shadow-xl hidden sm:flex items-center gap-2 select-none animate-bounce" style={{ animationDuration: '3s' }}>
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-200">
-                  {isAmharic ? "+14% የሽያጭ እድገት" : "+14% sales growth"}
+                  {t.mockup.growthText}
                 </span>
               </div>
 
-              <div className="absolute -bottom-4 -right-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 shadow-xl hidden sm:flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+              <div className="absolute -bottom-4 -right-4 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl p-3 shadow-xl hidden sm:flex items-center gap-2 select-none">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-200">
-                  {isAmharic ? "ከባንክ ጋር የተገናኘ" : "CBE/Awash reconciled"}
+                  {t.mockup.cbeText}
                 </span>
               </div>
+
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* 3. CORE STATISTICS */}
-      <section className="bg-white dark:bg-[#0F172A] border-y border-slate-100 dark:border-slate-800/80 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            
-            <div className="space-y-1">
-              <span className="text-3xl sm:text-4xl font-extrabold text-emerald-500 font-mono">
-                {bizCount}+
-              </span>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                {isAmharic ? "ንግዶች እየተጠቀሙ ነው" : "Businesses Using"}
-              </p>
-            </div>
 
-            <div className="space-y-1">
-              <span className="text-3xl sm:text-4xl font-extrabold text-indigo-500 font-mono">
-                {(itemsCount / 1000000).toFixed(1)}M+
-              </span>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                {isAmharic ? "ዕቃዎች ይተዳደራሉ" : "Products Managed"}
-              </p>
-            </div>
 
-            <div className="space-y-1">
-              <span className="text-3xl sm:text-4xl font-extrabold text-cyan-500 font-mono">
-                {(salesCount / 1000000).toFixed(1)}M+
-              </span>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                {isAmharic ? "ሽያጮች ተመዝግበዋል" : "Sales Recorded"}
-              </p>
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-3xl sm:text-4xl font-extrabold text-amber-500 font-mono">
-                99.8%
-              </span>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                {isAmharic ? "የደንበኞች እርካታ" : "Customer Satisfaction"}
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* 4. FEATURES GRID */}
+      {/* 4. BEAUTIFUL FEATURES GRID */}
       <section id="features" className="py-20 lg:py-32 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          {/* Header */}
+          {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-16 lg:mb-24">
-            <div className="inline-flex items-center gap-1 bg-indigo-500/10 dark:bg-indigo-500/5 px-3 py-1 rounded-full text-indigo-600 dark:text-indigo-400 text-[10px] font-bold uppercase tracking-widest">
+            <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-500/5 px-3 py-1.5 rounded-full text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest leading-none">
               <Zap className="w-3.5 h-3.5" />
-              {isAmharic ? "የታመኑና ዘመናዊ መፍትሄዎች" : "ENTERPRISE LEVEL ADVANTAGES"}
+              <span>{t.features.sectionBadge}</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-              {isAmharic ? "ለንግድዎ ስኬት የሚያስፈልጉ የተሟሉ መሳሪያዎች" : "Unrivaled Platform Capabilities"}
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight">
+              {t.features.sectionTitle}
             </h2>
-            <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
-              {isAmharic 
-                ? "ማንኛውንም የንግድ ዓይነት በቀላሉ ለማስተዳደርና ለማሳደግ የሚረዱዎ ልዩ መተግበሪያዎች።" 
-                : "A unified engine mapping inventory levels, instant ledger postings, loan allocations, and dynamic multi-calendar timelines."
-              }
+            <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base font-medium">
+              {t.features.sectionDesc}
             </p>
           </div>
 
           {/* Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feat, i) => (
-              <div 
-                key={i}
-                onClick={handleSignUp}
-                className="group relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-2xl shadow-xs hover:shadow-xl hover:border-emerald-500/20 dark:hover:border-emerald-500/30 transition-all duration-200 hover:-translate-y-1 cursor-pointer"
-              >
-                {/* Visual Accent Glow on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity pointer-events-none" />
+            {t.features.items.map((feat, i) => {
+              const icons = [
+                <Database className="w-5 h-5 text-emerald-600" />,
+                <TrendingUp className="w-5 h-5 text-blue-600" />,
+                <Users className="w-5 h-5 text-amber-500" />,
+                <BarChart3 className="w-5 h-5 text-blue-600" />,
+                <FileText className="w-5 h-5 text-emerald-600" />,
+                <Shield className="w-5 h-5 text-emerald-600" />
+              ];
+              return (
+                <div 
+                  key={i}
+                  onClick={handleSignUp}
+                  className="group relative bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 p-6 rounded-2xl shadow-xs hover:shadow-xl hover:border-emerald-500/20 dark:hover:border-emerald-500/30 transition-all duration-200 hover:-translate-y-1 cursor-pointer"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity pointer-events-none" />
 
-                <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
-                  {feat.icon}
+                  <div className="w-12 h-12 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800 flex items-center justify-center mb-5 group-hover:scale-105 transition-transform shrink-0 shadow-sm">
+                    {icons[i] || <Check className="w-5 h-5 text-emerald-600" />}
+                  </div>
+
+                  <h3 className="text-base font-extrabold text-slate-950 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                    {feat.title}
+                  </h3>
+
+                  <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
+                    {feat.desc}
+                  </p>
+
+                  <div className="mt-5 flex items-center gap-1 text-xs font-extrabold text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span>{isAmharic ? "አሁኑኑ ይሞክሩ" : "Try feature now"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
                 </div>
-
-                <h3 className="text-base font-bold text-slate-950 dark:text-white mb-2 group-hover:text-emerald-500 transition-colors">
-                  {isAmharic ? feat.titleAm : feat.titleEn}
-                </h3>
-
-                <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">
-                  {isAmharic ? feat.descAm : feat.descEn}
-                </p>
-
-                <div className="mt-5 flex items-center gap-1 text-[10px] font-bold text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span>{isAmharic ? "መተግበሪያውን ይክፈቱ" : "Explore feature"}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </div>
       </section>
 
       {/* 5. WHY CHOOSE US (TWO COLUMN SECTION) */}
-      <section id="why-choose-us" className="py-20 lg:py-32 bg-slate-50 dark:bg-slate-900/40 border-y border-slate-100 dark:border-slate-800/80 relative">
+      <section id="why-choose-us" className="py-20 lg:py-32 bg-slate-100/60 dark:bg-slate-950/30 border-y border-slate-200/50 dark:border-slate-900/60 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             
-            {/* Left side: Beautiful visual checklist illustration */}
+            {/* Left side: Checklist illustration */}
             <div className="relative">
-              <div className="aspect-square max-w-md mx-auto rounded-3xl bg-gradient-to-tr from-emerald-500/10 to-indigo-500/10 p-8 border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between relative shadow-lg">
-                <div className="absolute inset-0 bg-radial-gradient from-emerald-500/5 to-transparent pointer-events-none blur-3xl" />
+              <div className="aspect-square max-w-md mx-auto rounded-3xl bg-gradient-to-tr from-emerald-500/5 via-slate-50 to-blue-500/5 dark:from-emerald-500/5 dark:via-slate-900/50 dark:to-blue-500/5 p-8 border border-slate-200 dark:border-slate-800/80 flex flex-col justify-between relative shadow-lg">
                 
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                    <span className="text-[10px] font-bold tracking-widest text-emerald-500 uppercase">SYSTEM COMPLIANT</span>
+                    <span className="text-[10px] font-extrabold tracking-widest text-slate-400 dark:text-slate-500 uppercase">
+                      LOCALIZED PLATFORM
+                    </span>
                   </div>
-                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                  <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-500" />
                 </div>
 
-                <div className="space-y-4">
-                  <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">100% Ethiopian Business Ready</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Multi-currency setup supporting ETB as standard base value ledger.</p>
+                {/* Vertical layout list inside mock device */}
+                <div className="space-y-4 my-6">
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 shadow-xs">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs">🇪🇹</span>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">100% Ethiopian Commerce Ready</p>
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Multi-currency settings optimized with ETB as baseline ledgers.</p>
                   </div>
 
-                  <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Zero Internet dependency</p>
-                    <p className="text-[10px] text-slate-400 mt-1">Saves all data to secure LocalStorage cache. Never lose transaction logs.</p>
+                  <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 shadow-xs">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs">📶</span>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">Robust Cloud Database Isolation</p>
+                    </div>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400">Instantly synchronize to cloud. Your commercial entries stay isolated securely.</p>
                   </div>
                 </div>
 
-                <div className="text-slate-400 text-[10px] font-semibold text-center mt-4">
-                  HA-T-ERP-CLIENT-v3.0.4
+                <div className="text-slate-400 dark:text-slate-500 text-[9px] font-mono font-bold text-center">
+                  HABESHA-TRACKER-CORE-v4.0
                 </div>
               </div>
             </div>
 
-            {/* Right side: Benefits list */}
+            {/* Right side: SaaS Benefits list */}
             <div className="space-y-8">
               <div className="space-y-3">
-                <span className="text-[10px] font-bold text-emerald-500 tracking-wider uppercase bg-emerald-500/10 dark:bg-emerald-500/5 px-3 py-1 rounded-full">
-                  {isAmharic ? "ለምን መረጡን?" : "WHY HABESHA TRACKER?"}
+                <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 tracking-wider uppercase bg-blue-500/10 dark:bg-blue-500/5 px-3 py-1.5 rounded-full leading-none w-fit block">
+                  {t.whyUs.badge}
                 </span>
-                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-                  {isAmharic ? "የተሻለ አሰራር፣ የላቀ ውጤት!" : "Built to Power Modern Commerce"}
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight">
+                  {t.whyUs.title}
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">
-                  {isAmharic 
-                    ? "ከሌሎች ሲስተሞች በተለየ መልኩ የሀገር ውስጥ የገበያ ሁኔታዎችን፣ የባንክ አሰራሮችንና የቀን አቆጣጠሮችን ባገናዘበ መልኩ የተሰራ ልዩ መተግበሪያ ነው።"
-                    : "No complex servers or configurations. Boot your digital sales ledger in 10 seconds and enjoy absolute accounting visibility from day one."
-                  }
+                <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed font-medium">
+                  {t.whyUs.desc}
                 </p>
               </div>
 
-              {/* Benefits Checklist */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
-                    <Check className="w-3.5 h-3.5" />
+              {/* Grid of stats */}
+              <div className="grid grid-cols-2 gap-2 xs:gap-4">
+                {t.whyUs.stats.map((stat, i) => (
+                  <div key={i} className="p-3 xs:p-4 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-xl xs:rounded-2xl">
+                    <p className="text-lg xs:text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono leading-none">
+                      {stat.value}
+                    </p>
+                    <p className="text-[9px] xs:text-[11px] font-bold text-slate-400 uppercase mt-1.5 xs:mt-2 tracking-wider">
+                      {stat.label}
+                    </p>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-950 dark:text-white">{isAmharic ? "ፈጣንና ቀላል አጠቃቀም" : "Astonishingly Fast Execution"}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{isAmharic ? "ማንኛውም ሰው በቀላሉ እንዲረዳው ተደርጎ የተሰራ ግልጽና ጽዱ ገጽታ።" : "Optimized UI layout with single-click records. Zero unnecessary training required."}</p>
-                  </div>
-                </div>
+                ))}
+              </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
-                    <Check className="w-3.5 h-3.5" />
+              {/* Bullet advantages list */}
+              <div className="space-y-4 pt-2">
+                {t.whyUs.list.map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/5 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mt-1 shrink-0">
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-extrabold text-slate-950 dark:text-white">{item.title}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-950 dark:text-white">{isAmharic ? "አስተማማኝ የደህንነት ጥበቃ" : "Absolute Sandbox Security"}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{isAmharic ? "የእርሶ መረጃ በኮምፒውተርዎ ላይ ብቻ ተቀምጦ እንዲቆይ ያደርጋል።" : "Your accounting ledgers are cached in your local sandbox. Encrypted backups let you restore records anytime."}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0">
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-950 dark:text-white">{isAmharic ? "ቀላልና ግልጽ ሪፖርቶች" : "High Contrast PDF Exports"}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{isAmharic ? "ለማንበብ እጅግ ግልጽ የሆኑ ዕለታዊና ወርሃዊ የፒዲኤፍ ሪፖርቶች።" : "Compile high contrast, easy-to-read daily, weekly, or annual PDFs with standard audit compliance details."}</p>
-                  </div>
-                </div>
+                ))}
               </div>
 
             </div>
@@ -1003,32 +1236,87 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* 6. FAQ (ACCORDION SECTION) */}
+      {/* 6. HOW IT WORKS (TIMELINE SECTION) */}
+      <section id="how-it-works" className="py-20 lg:py-32 bg-white dark:bg-[#0B0F19]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          {/* Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-3 mb-16 lg:mb-24">
+            <span className="text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider uppercase bg-emerald-500/10 dark:bg-emerald-500/5 px-3 py-1.5 rounded-full leading-none">
+              {t.steps.badge}
+            </span>
+            <h2 className="text-3xl font-extrabold text-slate-950 dark:text-white tracking-tight">
+              {t.steps.title}
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+              {t.steps.desc}
+            </p>
+          </div>
+
+          {/* Timeline steps */}
+          <div className="relative">
+            {/* Timeline connection line (horizontal on desktop) */}
+            <div className="hidden lg:block absolute top-1/2 left-4 right-4 h-0.5 bg-slate-200 dark:bg-slate-800 -translate-y-12 z-0" />
+
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative z-10">
+              {t.steps.items.map((item, idx) => (
+                <div key={idx} className="text-center space-y-4">
+                  {/* Step icon number indicator */}
+                  <div className="w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 flex items-center justify-center font-extrabold text-emerald-600 dark:text-emerald-400 font-mono text-lg mx-auto shadow-sm relative group-hover:border-emerald-500 transition-colors">
+                    {idx + 1}
+                    <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-[9px] font-mono font-bold uppercase text-slate-500">
+                      {item.step}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5 px-2">
+                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+
+
+      {/* 8. FAQ (ACCORDION SECTION) */}
       <section id="faq" className="py-20 lg:py-32">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-16">
-            <span className="text-[10px] font-bold text-emerald-500 tracking-wider uppercase bg-emerald-500/10 dark:bg-emerald-500/5 px-3 py-1 rounded-full">
-              {isAmharic ? "የሚጠየቁ ጥያቄዎች" : "COMMON QUESTIONS"}
+            <span className="text-[10px] font-extrabold text-blue-600 dark:text-blue-400 tracking-wider uppercase bg-blue-500/10 dark:bg-blue-500/5 px-3 py-1.5 rounded-full leading-none">
+              {t.faq.badge}
             </span>
-            <h2 className="text-3xl font-extrabold text-slate-950 dark:text-white tracking-tight">
-              {isAmharic ? "ተደጋግመው የሚነሱ ጥያቄዎችና ምላሾች" : "Frequently Asked Questions"}
+            <h2 className="text-3xl font-extrabold text-slate-950 dark:text-white tracking-tight leading-tight">
+              {t.faq.title}
             </h2>
           </div>
 
+          {/* Accordion List */}
           <div className="space-y-4">
-            {faqs.map((faq, idx) => {
+            {t.faq.items.map((faq, idx) => {
               const isOpen = activeFaq === idx;
               return (
                 <div 
                   key={idx}
-                  className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden transition-all shadow-xs"
+                  className="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 rounded-2xl overflow-hidden transition-all shadow-xs"
                 >
                   <button
                     onClick={() => setActiveFaq(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between px-6 py-5 text-left text-sm font-bold text-slate-950 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors focus:outline-hidden"
+                    className="w-full flex items-center justify-between px-6 py-5 text-left text-sm font-extrabold text-slate-950 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors focus:outline-hidden cursor-pointer"
                   >
-                    <span>{isAmharic ? faq.qAm : faq.qEn}</span>
+                    <span className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>{faq.q}</span>
+                    </span>
                     {isOpen ? <ChevronUp className="w-4 h-4 text-emerald-500 shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />}
                   </button>
 
@@ -1040,8 +1328,8 @@ export default function LandingPage({
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.15 }}
                       >
-                        <div className="px-6 pb-5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800/80 pt-4">
-                          {isAmharic ? faq.aAm : faq.aEn}
+                        <div className="px-6 pb-5 text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-150 dark:border-slate-800 pt-4 font-medium">
+                          {faq.a}
                         </div>
                       </motion.div>
                     )}
@@ -1054,112 +1342,112 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* 7. CTA SECTION */}
-      <section className="py-16 lg:py-24 relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-y border-emerald-500/30 shadow-2xl">
-        {/* Soft decorative background visuals */}
+      {/* 9. HIGH CONVERSION CTA SECTION */}
+      <section className="py-20 lg:py-28 relative overflow-hidden bg-gradient-to-r from-emerald-600 to-teal-700 text-white border-y border-emerald-500/30 shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-black/10 rounded-full blur-2xl pointer-events-none" />
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center space-y-6">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
-            {isAmharic ? "ንግድዎን በዘመናዊ መንገድ መምራት ይጀምሩ!" : "Start Managing Your Business Today"}
+            {t.cta.title}
           </h2>
           
-          <p className="text-emerald-100 text-sm sm:text-base max-w-2xl mx-auto">
-            {isAmharic 
-              ? "ምንም አይነት ተጨማሪ ክፍያ ሳይኖርዎት አሁኑኑ በነጻ በመመዝገብ ዕለታዊ ሽያጮችንና የወጪ ሂሳቦችን በከፍተኛ ደረጃ መቆጣጠር ይጀምሩ።" 
-              : "Experience high-contrast reports, live grain/tech inventory reconciliations, and automatic local data synchronization."
-            }
+          <p className="text-emerald-100 text-sm sm:text-base max-w-2xl mx-auto font-semibold">
+            {t.cta.subtitle}
           </p>
 
           <div className="pt-4">
             <button
               onClick={handleSignUp}
-              className="px-8 py-4 bg-white text-emerald-700 font-extrabold rounded-xl hover:bg-slate-50 transition duration-150 shadow-xl shadow-emerald-950/20 text-sm inline-flex items-center gap-2"
-              id="btn-cta-signup-bottom"
+              className="px-8 py-4 bg-white text-emerald-700 font-extrabold rounded-2xl hover:bg-slate-50 transition duration-150 shadow-xl shadow-emerald-950/20 text-sm inline-flex items-center gap-2 cursor-pointer border border-transparent"
+              id="btn-bottom-cta"
             >
-              {isAmharic ? "አሁኑኑ በነጻ ይጀምሩ" : "Create Free Account"}
+              <span>{t.cta.button}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
 
-          <p className="text-emerald-200/80 text-[11px] font-medium">
-            {isAmharic ? "ክሬዲት ካርድ አያስፈልግም • ፈጣን ምዝገባ" : "No installation required • Fully secure sandbox client"}
+          <p className="text-emerald-200/80 text-xs font-bold font-mono">
+            {t.cta.microText}
           </p>
         </div>
       </section>
 
-      {/* 8. FOOTER */}
-      <footer className="bg-white dark:bg-[#080D1A] border-t border-slate-100 dark:border-slate-900/60 py-12 text-xs text-slate-500 dark:text-slate-400 transition-colors">
+      {/* 10. SAAS FOOTER */}
+      <footer className="bg-white dark:bg-[#080D1A] border-t border-slate-200/60 dark:border-slate-900/60 py-16 text-xs text-slate-500 dark:text-slate-400 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             
-            {/* Branding */}
+            {/* Branding Column */}
             <div className="space-y-4 md:col-span-1">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-white font-extrabold text-sm">H</div>
-                <span className="font-bold text-slate-950 dark:text-white text-sm">Habesha Tracker</span>
+                <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-extrabold text-sm">H</div>
+                <span className="font-bold text-slate-950 dark:text-white text-base">Habesha Tracker</span>
               </div>
-              <p className="text-[11px] leading-relaxed">
-                {isAmharic 
-                  ? "ለኢትዮጵያ ንግዶች የተዘጋጀ የመጀመሪያው የተሟላና ዘመናዊ የዕቃ ቁጥጥርና ሽያጭ መከታተያ የERP ዳሽቦርድ መተግበሪያ።" 
-                  : "Empowering retailers, distributors, grains exporters, and tech-hubs in Ethiopia with zero friction bookkeeping."
-                }
+              <p className="text-[11px] leading-relaxed font-semibold">
+                {t.footer.companyDesc}
               </p>
             </div>
 
-            {/* Quick links */}
+            {/* Product capabilities links */}
             <div className="space-y-3">
-              <h4 className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">{isAmharic ? "አገልግሎቶች" : "SaaS Products"}</h4>
+              <h4 className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">
+                {t.footer.columns.product}
+              </h4>
               <ul className="space-y-2">
-                <li><a href="#features" className="hover:text-emerald-500 transition-colors">{isAmharic ? "የዕቃ ቁጥጥር" : "Inventory Ledger"}</a></li>
-                <li><a href="#features" className="hover:text-emerald-500 transition-colors">{isAmharic ? "ሽያጭ መመዝገቢያ" : "Sales Tracker"}</a></li>
-                <li><a href="#features" className="hover:text-emerald-500 transition-colors">{isAmharic ? "የወጪና ብድር መዝገብ" : "Loans & Credit"}</a></li>
+                <li><a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{isAmharic ? "የዕቃ ቁጥጥር" : "Stock Valuation"}</a></li>
+                <li><a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{isAmharic ? "ሽያጭ መመዝገቢያ" : "Daily Sales Entry"}</a></li>
+                <li><a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{isAmharic ? "የወጪና ብድር መዝገብ" : "Debt History Ledger"}</a></li>
               </ul>
             </div>
 
-            {/* Resources */}
+            {/* Resources Column */}
             <div className="space-y-3">
-              <h4 className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">{isAmharic ? "ሀብቶች & ድጋፍ" : "Resources & Support"}</h4>
+              <h4 className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">
+                {t.footer.columns.resources}
+              </h4>
               <ul className="space-y-2">
-                <li><button onClick={() => setActiveDocument('about')} className="hover:text-emerald-500 transition-colors text-left cursor-pointer focus:outline-hidden">{isAmharic ? "ስለ እኛ (About Us)" : "About Us"}</button></li>
-                <li><button onClick={() => setActiveDocument('contact')} className="hover:text-emerald-500 transition-colors text-left cursor-pointer focus:outline-hidden">{isAmharic ? "ያግኙን (Contact Us)" : "Contact Us"}</button></li>
-                <li><button onClick={() => setActiveDocument('support')} className="hover:text-emerald-500 transition-colors text-left cursor-pointer font-semibold text-emerald-600 dark:text-emerald-400 focus:outline-hidden">{isAmharic ? "የቴሌግራም ድጋፍ (Support)" : "Telegram Support"}</button></li>
-                <li><a href="#faq" className="hover:text-emerald-500 transition-colors">{isAmharic ? "ተደጋግመው የሚነሱ ጥያቄዎች" : "FAQ"}</a></li>
+                <li><button onClick={() => setActiveDocument('about')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left cursor-pointer">{isAmharic ? "ስለ ሀበሻ ትራከር" : "About Us"}</button></li>
+                <li><button onClick={() => setActiveDocument('contact')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left cursor-pointer">{isAmharic ? "ያግኙን" : "Contact Us"}</button></li>
+                <li><button onClick={() => setActiveDocument('support')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">{isAmharic ? "ቴሌግራም ድጋፍ (Telegram)" : "Telegram Helpline"}</button></li>
+                <li><a href="#faq" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{t.nav.faq}</a></li>
               </ul>
             </div>
 
-            {/* Social / Contact info */}
+            {/* Office Column */}
             <div className="space-y-3">
-              <h4 className="font-bold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">{isAmharic ? "አድራሻ" : "Corporate Office"}</h4>
-              <p className="leading-relaxed">
+              <h4 className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">
+                {t.footer.columns.contact}
+              </h4>
+              <p className="leading-relaxed font-semibold">
                 Addis Ababa, Ethiopia <br />
                 {isAmharic ? "ስልክ: 0986580996" : "Phone: +251 986 580 996"} <br />
-                Support: support@habeshatracker.et
+                Email: support@habeshatracker.et
               </p>
             </div>
 
           </div>
 
-          <div className="pt-8 border-t border-slate-100 dark:border-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-            <p>© {new Date().getFullYear()} Habesha Tracker Cloud Systems. All rights reserved.</p>
+          {/* Legal Bar */}
+          <div className="pt-8 border-t border-slate-200/50 dark:border-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+            <p>© {new Date().getFullYear()} {t.footer.rights}</p>
             <div className="flex gap-4">
-              <button onClick={() => setActiveDocument('terms')} className="hover:text-emerald-500 transition-colors cursor-pointer focus:outline-hidden">{isAmharic ? "ውሎችና ደንቦች" : "Terms of Service"}</button>
-              <button onClick={() => setActiveDocument('privacy')} className="hover:text-emerald-500 transition-colors cursor-pointer focus:outline-hidden">{isAmharic ? "የግል መረጃ ጥበቃ" : "Privacy Policy"}</button>
+              <button onClick={() => setActiveDocument('terms')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer">{isAmharic ? "የአጠቃቀም ደንቦች" : "Terms of Service"}</button>
+              <button onClick={() => setActiveDocument('privacy')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer">{isAmharic ? "የግል መረጃ ጥበቃ" : "Privacy Policy"}</button>
             </div>
           </div>
 
         </div>
       </footer>
 
-      {/* Dynamic Document Modal */}
+      {/* DYNAMIC DOCUMENT MODALS */}
       <AnimatePresence>
         {activeDocument && (() => {
           const doc = docContent[activeDocument];
           if (!doc) return null;
           return (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              {/* Backdrop blur & overlay */}
+              {/* Overlay Backdrop */}
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -1174,20 +1462,20 @@ export default function LandingPage({
                 animate={{ scale: 1, y: 0, opacity: 1 }}
                 exit={{ scale: 0.95, y: 15, opacity: 0 }}
                 transition={{ type: "spring", duration: 0.3 }}
-                className="relative bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col z-10 text-left"
+                className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col z-10 text-left"
                 id="landing-doc-modal"
               >
                 {/* Header */}
-                <div className="p-6 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="p-6 border-b border-slate-200/50 dark:border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
                   <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-xl text-emerald-600 dark:text-emerald-400 shrink-0">
                       {doc.icon}
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-slate-950 dark:text-white text-base sm:text-lg tracking-tight">
+                      <h3 className="font-extrabold text-slate-950 dark:text-white text-base sm:text-lg tracking-tight leading-tight">
                         {isAmharic ? doc.titleAm : doc.titleEn}
                       </h3>
-                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-semibold mt-0.5">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-widest font-extrabold mt-1">
                         {isAmharic ? 'የሀበሻ ትራከር መረጃ ማዕከል' : 'Habesha Tracker Resource Hub'}
                       </p>
                     </div>
@@ -1195,26 +1483,26 @@ export default function LandingPage({
                   
                   <button 
                     onClick={() => setActiveDocument(null)}
-                    className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition focus:outline-hidden cursor-pointer"
+                    className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition cursor-pointer"
                     aria-label="Close modal"
-                    id="btn-close-doc-modal"
+                    id="btn-close-modal"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 sm:p-8 overflow-y-auto text-slate-600 dark:text-slate-300 text-sm leading-relaxed max-h-[60vh]">
+                {/* Body Content */}
+                <div className="p-6 sm:p-8 overflow-y-auto text-slate-600 dark:text-slate-300 text-sm leading-relaxed max-h-[60vh] font-medium">
                   {isAmharic ? doc.contentAm : doc.contentEn}
                 </div>
 
-                {/* Footer */}
-                <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0 text-[10px] sm:text-xs text-slate-400">
-                  <span>© {new Date().getFullYear()} Habesha Tracker Systems.</span>
+                {/* Footer bar */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-950/40 border-t border-slate-200/50 dark:border-slate-800/80 flex items-center justify-between shrink-0 text-[10px] sm:text-xs text-slate-400">
+                  <span>© {new Date().getFullYear()} Habesha Tracker.</span>
                   <button 
                     onClick={() => setActiveDocument(null)}
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition cursor-pointer text-xs focus:outline-hidden"
-                    id="btn-modal-close-footer"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl transition cursor-pointer text-xs"
+                    id="btn-modal-close"
                   >
                     {isAmharic ? 'ዝጋ' : 'Close'}
                   </button>

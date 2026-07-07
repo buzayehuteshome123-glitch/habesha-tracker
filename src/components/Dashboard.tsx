@@ -68,12 +68,12 @@ export default function Dashboard({
   const preferSinqee = settings.preferSinqee !== false;
   const preferOther = settings.preferOther === true;
 
-  const startingCBE = settings.startingCBE ?? 150000;
-  const startingTelebirr = settings.startingTelebirr ?? 100000;
-  const startingEBirr = settings.startingEBirr ?? 40000;
-  const startingSinqee = settings.startingSinqee ?? 30000;
+  const startingCBE = settings.startingCBE ?? 0;
+  const startingTelebirr = settings.startingTelebirr ?? 0;
+  const startingEBirr = settings.startingEBirr ?? 0;
+  const startingSinqee = settings.startingSinqee ?? 0;
   const startingOther = settings.startingOther ?? 0;
-  const startingCash = settings.startingCash ?? 65000;
+  const startingCash = settings.startingCash ?? 0;
 
   // Aggregate transaction additions and subtractions per account
   let cbeSales = 0, cbeExp = 0;

@@ -47,20 +47,20 @@ interface Toast {
 }
 
 export default function App() {
-  // 1. Initial States with Fallback to rich sampleData
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [sales, setSales] = useState<Sale[]>(INITIAL_SALES);
-  const [expenses, setExpenses] = useState<Expense[]>(INITIAL_EXPENSES);
-  const [receivables, setReceivables] = useState<Receivable[]>(INITIAL_RECEIVABLES);
-  const [payables, setPayables] = useState<Payable[]>(INITIAL_PAYABLES);
-  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
-  const [memos, setMemos] = useState<Memo[]>(INITIAL_MEMOS);
-  const [goals, setGoals] = useState<DailyGoal[]>(INITIAL_GOALS);
+  // 1. Initial States without prefilled demo/sample data
+  const [products, setProducts] = useState<Product[]>([]);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [receivables, setReceivables] = useState<Receivable[]>([]);
+  const [payables, setPayables] = useState<Payable[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [memos, setMemos] = useState<Memo[]>([]);
+  const [goals, setGoals] = useState<DailyGoal[]>([]);
   const [settings, setSettings] = useState<BusinessSettings>({
-    businessName: 'Habesha Grains & Tech ERP',
-    address: 'Merkato Ward 3, Addis Ababa, Ethiopia',
-    phone: '+251 911 234567',
-    email: 'contact@habeshagrains.et',
+    businessName: 'My Habesha Business',
+    address: 'Addis Ababa, Ethiopia',
+    phone: '',
+    email: '',
     currency: 'ETB',
     language: 'en',
     theme: 'dark',
@@ -71,12 +71,12 @@ export default function App() {
     preferEBirr: true,
     preferSinqee: false,
     preferOther: false,
-    startingCBE: 150000,
-    startingTelebirr: 100000,
-    startingEBirr: 40000,
-    startingSinqee: 30000,
+    startingCBE: 0,
+    startingTelebirr: 0,
+    startingEBirr: 0,
+    startingSinqee: 0,
     startingOther: 0,
-    startingCash: 65000
+    startingCash: 0
   });
 
   // Track database loading and user identification
@@ -146,11 +146,13 @@ export default function App() {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
         setAuthScreen('app');
+        setOfflineMode(false);
       } else {
         setUserId(null);
         setUserEmail('');
         setSetupRequired(false);
         setAuthScreen('landing');
+        setOfflineMode(false);
       }
     });
 
@@ -159,16 +161,63 @@ export default function App() {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
         setAuthScreen('app');
+        setOfflineMode(false);
       } else {
         setUserId(null);
         setUserEmail('');
         setSetupRequired(false);
         setAuthScreen('landing');
+        setOfflineMode(false);
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Automatic inactivity logout mechanism (15 minutes default)
+  useEffect(() => {
+    if (!userId || offlineMode) return;
+
+    const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+    let timeoutId: any;
+
+    const handleInactivityLogout = async () => {
+      import('./lib/logger').then(({ logger }) => {
+        logger.warn('security', 'User session terminated automatically due to inactivity', { userId, userEmail });
+      });
+      
+      addToast(
+        settings.language === 'am'
+          ? 'ለደህንነት ሲባል ምንም እንቅስቃሴ ባለመኖሩ ምክንያት አካውንትዎ በራስ-ሰር ወጥቷል።'
+          : 'Your session has been automatically logged out due to inactivity for security reasons.',
+        'warning'
+      );
+      
+      await supabase.auth.signOut();
+    };
+
+    const resetInactivityTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleInactivityLogout, INACTIVITY_TIMEOUT);
+    };
+
+    // Events to watch for activity
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      window.addEventListener(event, resetInactivityTimer);
+    });
+
+    // Start initial timer
+    resetInactivityTimer();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, resetInactivityTimer);
+      });
+    };
+  }, [userId, settings.language, userEmail]);
 
   // Fetch all user data when authenticated user is set
   useEffect(() => {
@@ -341,11 +390,8 @@ export default function App() {
   };
 
   // Bank & Cash calculations (dynamic base ledger)
-  const BASE_BANK = 320000;
-  const BASE_CASH = 65000;
-
-  const [bankBalance, setBankBalance] = useState(BASE_BANK);
-  const [cashOnHand, setCashOnHand] = useState(BASE_CASH);
+  const [bankBalance, setBankBalance] = useState(0);
+  const [cashOnHand, setCashOnHand] = useState(0);
 
   // Synchronize dynamic balances on any transactions ledger change
   useEffect(() => {
@@ -372,8 +418,22 @@ export default function App() {
     const bankAdjust = settings.bankAdjust || 0;
     const cashAdjust = settings.cashAdjust || 0;
 
-    setBankBalance(BASE_BANK + salesBank - expensesBank + bankAdjust);
-    setCashOnHand(BASE_CASH + salesCash - expensesCash + cashAdjust);
+    const startingCBE = settings.startingCBE ?? 0;
+    const startingTelebirr = settings.startingTelebirr ?? 0;
+    const startingEBirr = settings.startingEBirr ?? 0;
+    const startingSinqee = settings.startingSinqee ?? 0;
+    const startingOther = settings.startingOther ?? 0;
+    const startingCash = settings.startingCash ?? 0;
+
+    const totalStartingBank = 
+      (settings.preferCBE ? startingCBE : 0) +
+      (settings.preferTelebirr ? startingTelebirr : 0) +
+      (settings.preferEBirr ? startingEBirr : 0) +
+      (settings.preferSinqee ? startingSinqee : 0) +
+      (settings.preferOther ? startingOther : 0);
+
+    setBankBalance(totalStartingBank + salesBank - expensesBank + bankAdjust);
+    setCashOnHand(startingCash + salesCash - expensesCash + cashAdjust);
   }, [sales, expenses, settings]);
 
   // Handle bank/cash adjustments (manual transfers)

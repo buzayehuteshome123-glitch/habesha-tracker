@@ -39,12 +39,12 @@ export default function ProfileSetup({ userId, userEmail, onComplete, onLogout }
   const [preferSinqee, setPreferSinqee] = useState(false);
   const [preferOther, setPreferOther] = useState(false);
 
-  const [startingCBE, setStartingCBE] = useState('150000');
-  const [startingTelebirr, setStartingTelebirr] = useState('100000');
-  const [startingEBirr, setStartingEBirr] = useState('40000');
-  const [startingSinqee, setStartingSinqee] = useState('30000');
+  const [startingCBE, setStartingCBE] = useState('0');
+  const [startingTelebirr, setStartingTelebirr] = useState('0');
+  const [startingEBirr, setStartingEBirr] = useState('0');
+  const [startingSinqee, setStartingSinqee] = useState('0');
   const [startingOther, setStartingOther] = useState('0');
-  const [startingCash, setStartingCash] = useState('65000');
+  const [startingCash, setStartingCash] = useState('0');
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

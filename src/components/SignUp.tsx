@@ -69,8 +69,31 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg(isAmharic ? 'የይለፍ ቃሉ ቢያንስ ከ6 ፊደላት በላይ መሆን አለበት።' : 'Password must be at least 6 characters long.');
+    // Strong Password Validation
+    const hasMinLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[^A-Za-z0-9]/.test(password);
+
+    if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSpecialChar) {
+      const criteria = [];
+      if (!hasMinLength) criteria.push(isAmharic ? 'ቢያንስ 8 ፊደላት' : 'at least 8 characters');
+      if (!hasUppercase) criteria.push(isAmharic ? 'ቢያንስ አንድ ትልቅ ፊደል (A-Z)' : 'at least one uppercase letter');
+      if (!hasLowercase) criteria.push(isAmharic ? 'ቢያንስ አንድ ትንሽ ፊደል (a-z)' : 'at least one lowercase letter');
+      if (!hasNumber) criteria.push(isAmharic ? 'ቢያንስ አንድ ቁጥር (0-9)' : 'at least one number');
+      if (!hasSpecialChar) criteria.push(isAmharic ? 'ቢያንስ አንድ ልዩ ምልክት (ለምሳሌ @, #, $, %)' : 'at least one special character');
+
+      const errorMsgText = isAmharic 
+        ? `እባክዎ ጠንካራ የይለፍ ቃል ይጠቀሙ። የይለፍ ቃልዎ እነዚህን መስፈርቶች ማሟላት አለበት፡ ${criteria.join('፣ ')}።`
+        : `Please choose a stronger password. It must contain: ${criteria.join(', ')}.`;
+      
+      setErrorMsg(errorMsgText);
+      
+      // Log validation failure
+      import('../lib/logger').then(({ logger }) => {
+        logger.warn('validation', 'Registration password strength check failed', { email, passwordLength: password.length });
+      });
       return;
     }
 
@@ -85,7 +108,15 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
 
       if (error) {
         setErrorMsg(getFriendlyErrorMessage(error));
+        // Log signup error
+        import('../lib/logger').then(({ logger }) => {
+          logger.error('auth', 'User registration failed on server', { email, errorMsg: error.message });
+        });
       } else {
+        // Log successful registration
+        import('../lib/logger').then(({ logger }) => {
+          logger.info('auth', 'User successfully registered', { email, userId: data?.user?.id });
+        });
         // If a session exists (auto-login is enabled on Supabase project), sign out to prevent auto-login
         if (data?.session) {
           await supabase.auth.signOut();
@@ -259,7 +290,7 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
             {isAmharic ? 'ቀድሞውኑ አካውንት አለዎት? ' : 'Already have an account? '}
           </span>
           <button 
-            onClick={onSwitchToSignIn}
+            onClick={() => onSwitchToSignIn()}
             className="font-bold text-emerald-500 hover:text-emerald-600 transition"
             id="btn-signup-goto-signin"
           >
