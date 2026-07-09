@@ -9,7 +9,6 @@ import {
   EyeOff, 
   Building2, 
   AlertCircle,
-  Sparkles,
   ArrowLeft,
   CheckCircle2,
   Chrome
@@ -36,8 +35,8 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
     const msg = error?.message || '';
     if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('network') || msg.includes('fetch')) {
       return isAmharic 
-        ? 'የዳታቤዝ ግንኙነት ስህተት፡ ከደመና ዳታቤዝ ጋር መገናኘት አልተቻለም። እባክዎ የእርስዎ Supabase ዩአርኤል (URL) በስህተት አለመዋቀሩን፣ ወይም የበይነመረብ ግንኙነትዎን ያረጋግጡ። ያለ ኢንተርኔት ለመሞከር "Try Offline / Local Demo Mode" የሚለውን ይጫኑ።'
-        : 'Database Connection Error: Could not connect to the cloud database. Please check your network connection, or ensure your Supabase VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are correct. To try the app offline, click "Try Offline / Local Demo Mode" below.';
+        ? 'የዳታቤዝ ግንኙነት ስህተት፡ ከደመና ዳታቤዝ ጋር መገናኘት አልተቻለም። እባክዎ የእርስዎ Supabase ዩአርኤል (URL) በስህተት አለመዋቀሩን፣ ወይም የበይነመረብ ግንኙነትዎን ያረጋግጡ።'
+        : 'Database Connection Error: Could not connect to the cloud database. Please check your network connection, or ensure your Supabase VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables are correct.';
     }
     return msg || (isAmharic ? 'የስህተት ሙከራ ተከስቷል፣ እባክዎ እንደገና ይሞክሩ።' : 'An unexpected error occurred. Please try again.');
   };
@@ -143,7 +142,7 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-200 relative overflow-y-auto py-8 sm:py-12">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-200 relative overflow-y-auto overflow-x-hidden py-8 sm:py-12">
       {/* Decorative Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />

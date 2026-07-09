@@ -165,12 +165,6 @@ export default function App() {
       if (isRecovery) {
         setAuthScreen('reset-password');
         setOfflineMode(false);
-        try {
-          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        } catch (e) {
-          // ignore
-        }
       } else if (session) {
         setUserId(session.user.id);
         setUserEmail(session.user.email || '');
@@ -180,7 +174,12 @@ export default function App() {
         setUserId(null);
         setUserEmail('');
         setSetupRequired(false);
-        setAuthScreen('landing');
+        setAuthScreen(current => {
+          if (current === 'signin' || current === 'signup' || current === 'reset-password') {
+            return current;
+          }
+          return 'landing';
+        });
         setOfflineMode(false);
       }
     });
@@ -190,25 +189,31 @@ export default function App() {
         setAuthScreen('reset-password');
         setOfflineMode(false);
       } else if (session) {
-        if (authScreen !== 'reset-password') {
-          setUserId(session.user.id);
-          setUserEmail(session.user.email || '');
-          setAuthScreen('app');
-          setOfflineMode(false);
-        }
+        setAuthScreen(current => {
+          if (current !== 'reset-password') {
+            setUserId(session.user.id);
+            setUserEmail(session.user.email || '');
+            setOfflineMode(false);
+            return 'app';
+          }
+          return current;
+        });
       } else {
-        if (authScreen !== 'reset-password') {
-          setUserId(null);
-          setUserEmail('');
-          setSetupRequired(false);
-          setAuthScreen('landing');
-          setOfflineMode(false);
-        }
+        setUserId(null);
+        setUserEmail('');
+        setSetupRequired(false);
+        setOfflineMode(false);
+        setAuthScreen(current => {
+          if (current === 'app') {
+            return 'landing';
+          }
+          return current;
+        });
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [authScreen]);
+  }, []);
 
   // Automatic inactivity logout mechanism (15 minutes default)
   useEffect(() => {
