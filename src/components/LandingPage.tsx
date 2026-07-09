@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   TrendingUp, 
   BarChart3, 
@@ -35,6 +36,9 @@ import {
   ArrowRightLeft
 } from 'lucide-react';
 import { BusinessSettings } from '../types';
+import PublicHeader from './PublicHeader';
+import PublicFooter from './PublicFooter';
+import MetaTags from './MetaTags';
 
 interface LandingPageProps {
   onEnterApp: () => void;
@@ -401,8 +405,9 @@ export default function LandingPage({
   settings, 
   setSettings 
 }: LandingPageProps) {
-  const handleLogin = onLoginClick || onEnterApp;
-  const handleSignUp = onSignUpClick || onEnterApp;
+  const navigate = useNavigate();
+  const handleLogin = () => navigate('/login');
+  const handleSignUp = () => navigate('/signup');
   const isAmharic = settings.language === 'am';
   const isDark = settings.theme === 'dark';
   const t = isAmharic ? translations.am : translations.en;
@@ -669,85 +674,17 @@ export default function LandingPage({
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 font-sans transition-colors duration-200">
       
+      <MetaTags 
+        title={isAmharic ? "ሀበሻ ትራከር - ዘመናዊ የሂሳብ አያያዝ ቴክኖሎጂ" : "Habesha Tracker - Modern Ethiopian Cloud Bookkeeping"}
+        description={isAmharic 
+          ? "በኢትዮጵያ ውስጥ ያሉ ሱቆችን፣ አከፋፋዮችን፣ ጅምላ ነጋዴዎችን እና የሰብል ላኪዎችን በዘመናዊ የሂሳብ አያያዝ መተግበሪያ እናበቃለን።" 
+          : "Empower your Ethiopian retail store, wholesale house, distributor, or agricultural grain export business with modern bookkeeping. Dual English & Amharic workspace, CBE bank transfers, and telebirr logs."}
+        canonicalUrl="https://habeshatracker.com/"
+        isAmharic={isAmharic}
+      />
+
       {/* 1. PREMIUM HEADER */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-[#0B0F19]/80 border-b border-slate-200/50 dark:border-slate-900/60 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          
-          {/* Logo Brand Block */}
-          <div className="flex items-center gap-3">
-            <svg className="w-10 h-10 shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" id="logo-svg-saas">
-              <defs>
-                <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#16A34A" /> {/* Emerald Green */}
-                  <stop offset="100%" stopColor="#2563EB" /> {/* Royal Blue */}
-                </linearGradient>
-                <linearGradient id="gold-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#F59E0B" /> {/* Gold */}
-                  <stop offset="100%" stopColor="#D97706" />
-                </linearGradient>
-              </defs>
-              <rect width="40" height="40" rx="12" fill="url(#primary-grad)" />
-              {/* Clean abstract 'H' & Chart combo representing Habesha Tracker */}
-              <rect x="11" y="10" width="4" height="20" rx="1" fill="white" />
-              <rect x="25" y="10" width="4" height="20" rx="1" fill="white" />
-              <rect x="15" y="18" width="10" height="4" fill="white" />
-              <circle cx="20" cy="20" r="4" fill="url(#gold-grad)" />
-            </svg>
-            <div className="hidden sm:block">
-              <span className="font-bold tracking-tight text-slate-900 dark:text-white text-base sm:text-lg block leading-tight font-sans">
-                Habesha Tracker
-              </span>
-            </div>
-          </div>
-
-          {/* Desktop Central Navigation Menu */}
-          <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              {t.nav.features}
-            </a>
-            <a href="#why-choose-us" className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              {t.nav.whyUs}
-            </a>
-            <a href="#faq" className="text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-              {t.nav.faq}
-            </a>
-          </nav>
-
-          {/* Quick SaaS Control Toolbar */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
-            {/* Localized Language Switcher */}
-            <button 
-              onClick={toggleLanguage}
-              className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-[10px] sm:text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 transition text-slate-700 dark:text-slate-200 flex items-center gap-1 cursor-pointer shrink-0"
-              title="Switch Language / ቋንቋ ለመቀየር"
-              id="btn-lang-toggle"
-            >
-              <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
-              <span className="hidden sm:inline">{isAmharic ? "English" : "አማርኛ"}</span>
-              <span className="sm:hidden">{isAmharic ? "EN" : "አማ"}</span>
-            </button>
-
-            {/* Account CTA Group */}
-            <button 
-              onClick={handleLogin}
-              className="inline-flex items-center text-[11px] sm:text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition py-1 px-1.5 sm:py-2 sm:px-3 shrink-0"
-              id="btn-login"
-            >
-              {t.nav.logIn}
-            </button>
-
-            <button 
-              onClick={handleSignUp}
-              className="inline-flex items-center justify-center px-2.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg sm:rounded-xl shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/20 transition duration-150 cursor-pointer border border-transparent shrink-0"
-              id="btn-signup"
-            >
-              <span>{t.nav.startTrial}</span>
-              <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 sm:ml-1.5" />
-            </button>
-          </div>
-
-        </div>
-      </header>
+      <PublicHeader settings={settings} setSettings={setSettings} />
 
       {/* 2. MODERN SAAS HERO SECTION */}
       <section className="relative overflow-hidden pt-12 pb-20 lg:pt-24 lg:pb-32 bg-radial-gradient from-white to-slate-50 dark:from-[#0B0F19] dark:to-[#080B12]">
@@ -1388,71 +1325,7 @@ export default function LandingPage({
       </section>
 
       {/* 10. SAAS FOOTER */}
-      <footer className="bg-white dark:bg-[#080D1A] border-t border-slate-200/60 dark:border-slate-900/60 py-16 text-xs text-slate-500 dark:text-slate-400 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
-            
-            {/* Branding Column */}
-            <div className="space-y-4 md:col-span-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-extrabold text-sm">H</div>
-                <span className="font-bold text-slate-950 dark:text-white text-base">Habesha Tracker</span>
-              </div>
-              <p className="text-[11px] leading-relaxed font-semibold">
-                {t.footer.companyDesc}
-              </p>
-            </div>
-
-            {/* Product capabilities links */}
-            <div className="space-y-3">
-              <h4 className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">
-                {t.footer.columns.product}
-              </h4>
-              <ul className="space-y-2">
-                <li><a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{isAmharic ? "የዕቃ ቁጥጥር" : "Stock Valuation"}</a></li>
-                <li><a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{isAmharic ? "ሽያጭ መመዝገቢያ" : "Daily Sales Entry"}</a></li>
-                <li><a href="#features" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{isAmharic ? "የወጪና ብድር መዝገብ" : "Debt History Ledger"}</a></li>
-              </ul>
-            </div>
-
-            {/* Resources Column */}
-            <div className="space-y-3">
-              <h4 className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">
-                {t.footer.columns.resources}
-              </h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => setActiveDocument('about')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left cursor-pointer">{isAmharic ? "ስለ ሀበሻ ትራከር" : "About Us"}</button></li>
-                <li><button onClick={() => setActiveDocument('contact')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left cursor-pointer">{isAmharic ? "ያግኙን" : "Contact Us"}</button></li>
-                <li><button onClick={() => setActiveDocument('support')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">{isAmharic ? "ቴሌግራም ድጋፍ (Telegram)" : "Telegram Helpline"}</button></li>
-                <li><a href="#faq" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">{t.nav.faq}</a></li>
-              </ul>
-            </div>
-
-            {/* Office Column */}
-            <div className="space-y-3">
-              <h4 className="font-extrabold text-slate-900 dark:text-slate-200 uppercase tracking-widest text-[10px]">
-                {t.footer.columns.contact}
-              </h4>
-              <p className="leading-relaxed font-semibold">
-                Addis Ababa, Ethiopia <br />
-                {isAmharic ? "ስልክ: 0986580996" : "Phone: +251 986 580 996"} <br />
-                Email: support@habeshatracker.et
-              </p>
-            </div>
-
-          </div>
-
-          {/* Legal Bar */}
-          <div className="pt-8 border-t border-slate-200/50 dark:border-slate-900/60 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
-            <p>© {new Date().getFullYear()} {t.footer.rights}</p>
-            <div className="flex gap-4">
-              <button onClick={() => setActiveDocument('terms')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer">{isAmharic ? "የአጠቃቀም ደንቦች" : "Terms of Service"}</button>
-              <button onClick={() => setActiveDocument('privacy')} className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer">{isAmharic ? "የግል መረጃ ጥበቃ" : "Privacy Policy"}</button>
-            </div>
-          </div>
-
-        </div>
-      </footer>
+      <PublicFooter settings={settings} />
 
       {/* DYNAMIC DOCUMENT MODALS */}
       <AnimatePresence>

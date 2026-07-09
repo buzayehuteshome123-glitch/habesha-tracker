@@ -3,15 +3,29 @@ User-agent: *
 
 # Allow search engine indexing on public pages
 Allow: /$
+Allow: /features
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /privacy-policy
+Allow: /terms-of-service
+Allow: /refund-policy
 Allow: /login
 Allow: /signup
+Allow: /forgot-password
 Allow: /reset-password
 
 # Prevent search engine indexing on private, authenticated dashboard routes and API endpoints
 Disallow: /dashboard
+Disallow: /inventory
+Disallow: /sales
+Disallow: /expenses
+Disallow: /loans
+Disallow: /tasks
+Disallow: /reports
+Disallow: /settings
 Disallow: /app
 Disallow: /api/
-Disallow: /settings
 Disallow: /profile-setup
 
 # Link to the dynamic sitemap

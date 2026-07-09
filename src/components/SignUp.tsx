@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { BusinessSettings } from '../types';
+import MetaTags from './MetaTags';
 
 interface SignUpProps {
   onSuccess: () => void;
@@ -143,6 +144,15 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-200 relative overflow-y-auto overflow-x-hidden py-8 sm:py-12">
+      <MetaTags 
+        title={isAmharic ? 'ተመዝገብ - ሀበሻ ትራከር' : 'Sign Up - Habesha Tracker'}
+        description={isAmharic 
+          ? 'ነፃ የሀበሻ ትራከር አካውንት ይፍጠሩ እና የንግድዎን የፋይናንስ እንቅስቃሴዎች መከታተል ይጀምሩ።' 
+          : 'Create your free Habesha Tracker account and start tracking your business financial operations.'}
+        canonicalUrl="https://habeshatracker.com/signup"
+        isAmharic={isAmharic}
+      />
+
       {/* Decorative Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />

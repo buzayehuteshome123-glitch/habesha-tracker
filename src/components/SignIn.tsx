@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { BusinessSettings } from '../types';
+import MetaTags from './MetaTags';
 
 interface SignInProps {
   onSuccess: () => void;
@@ -34,7 +35,12 @@ export default function SignIn({
   showSuccess
 }: SignInProps) {
   const isAmharic = settings.language === 'am';
-  const [viewMode, setViewMode] = useState<'signin' | 'forgot'>('signin');
+  const [viewMode, setViewMode] = useState<'signin' | 'forgot'>(() => {
+    if (window.location.pathname === '/forgot-password') {
+      return 'forgot';
+    }
+    return 'signin';
+  });
   const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState(() => {
     if (prefillEmail && typeof prefillEmail === 'string' && !prefillEmail.includes('[object')) {
@@ -277,6 +283,26 @@ export default function SignIn({
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A] flex flex-col justify-center items-center p-4 sm:p-6 transition-colors duration-200 relative overflow-y-auto overflow-x-hidden py-8 sm:py-12">
+      {viewMode === 'forgot' ? (
+        <MetaTags 
+          title={isAmharic ? 'የይለፍ ቃል መቀየር - ሀበሻ ትራከር' : 'Reset Password - Habesha Tracker'}
+          description={isAmharic 
+            ? 'ለሀበሻ ትራከር አካውንትዎ አዲስ አስተማማኝ የይለፍ ቃል ያስቀምጡ።' 
+            : 'Set a new secure password for your Habesha Tracker account.'}
+          canonicalUrl="https://habeshatracker.com/forgot-password"
+          isAmharic={isAmharic}
+        />
+      ) : (
+        <MetaTags 
+          title={isAmharic ? 'ግባ - ሀበሻ ትራከር' : 'Login - Habesha Tracker'}
+          description={isAmharic 
+            ? 'ሽያጮችን፣ ወጪዎችን፣ ክምችቶችን እና ብድሮችን ለመቆጣጠር ወደ ሀበሻ ትራከር አካውንትዎ ይግቡ።' 
+            : 'Sign in to your Habesha Tracker account to manage your sales, expenses, inventory, and loans.'}
+          canonicalUrl="https://habeshatracker.com/login"
+          isAmharic={isAmharic}
+        />
+      )}
+
       {/* Decorative Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-emerald-400/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 left-1/4 w-[350px] h-[350px] bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />

@@ -15,6 +15,14 @@ import ProfileSetup from './components/ProfileSetup';
 import DatabaseSetupGuide from './components/DatabaseSetupGuide';
 import ResetPassword from './components/ResetPassword';
 import { supabase } from './lib/supabase';
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import FeaturesPage from './components/FeaturesPage';
+import AboutPage from './components/AboutPage';
+import ContactPage from './components/ContactPage';
+import FAQPage from './components/FAQPage';
+import PrivacyPolicyPage from './components/PrivacyPolicyPage';
+import TermsOfServicePage from './components/TermsOfServicePage';
+import RefundPolicyPage from './components/RefundPolicyPage';
 
 import { 
   Product, 
@@ -48,6 +56,14 @@ interface Toast {
 }
 
 export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
+    </BrowserRouter>
+  );
+}
+
+export function AppContent() {
   // 1. Initial States without prefilled demo/sample data
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
@@ -979,444 +995,545 @@ export default function App() {
     }
   };
 
-  if (dbLoading) {
-    return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 animate-pulse">
-            {settings.language === 'am' ? 'ከሱፓቤዝ ዳታቤዝ ጋር በመገናኘት ላይ...' : 'Connecting to Supabase Database...'}
-          </p>
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Sync route path to currentTab when authenticated
+  useEffect(() => {
+    const path = location.pathname.substring(1); // strip leading slash
+    const tabs = ['dashboard', 'inventory', 'sales', 'expenses', 'loans', 'tasks', 'reports', 'settings'];
+    if (userId && tabs.includes(path)) {
+      setCurrentTab(path);
+    }
+  }, [location.pathname, userId]);
+
+  // Sync currentTab state to route path when authenticated
+  useEffect(() => {
+    if (userId) {
+      const tabs = ['dashboard', 'inventory', 'sales', 'expenses', 'loans', 'tasks', 'reports', 'settings'];
+      if (tabs.includes(currentTab)) {
+        const path = `/${currentTab}`;
+        if (location.pathname !== path) {
+          navigate(path);
+        }
+      }
+    }
+  }, [currentTab, userId, navigate, location.pathname]);
+
+  function RequireAuth({ children }: { children: React.ReactNode }) {
+    if (dbLoading) {
+      return (
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 animate-pulse">
+              {settings.language === 'am' ? 'ከሱፓቤዝ ዳታቤዝ ጋር በመገናኘት ላይ...' : 'Connecting to Supabase Database...'}
+            </p>
+          </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (authScreen === 'landing') {
-    return (
-      <LandingPage 
-        onEnterApp={() => {
-          setOfflineMode(true);
-          setUserId('demo-offline-user');
-          setAuthScreen('app');
-          setCurrentTab('dashboard');
-        }} 
-        onLoginClick={() => {
-          setSignupPrefillEmail('');
-          setSignupSuccess(false);
-          setAuthScreen('signin');
-        }}
-        onSignUpClick={() => {
-          setSignupPrefillEmail('');
-          setSignupSuccess(false);
-          setAuthScreen('signup');
-        }}
-        settings={settings} 
-        setSettings={setSettings} 
-      />
-    );
-  }
+    if (!userId) {
+      return <Navigate to="/login" replace />;
+    }
 
-  if (authScreen === 'signin') {
-    return (
-      <SignIn 
-        onSuccess={() => {
-          setSignupPrefillEmail('');
-          setSignupSuccess(false);
-          setAuthScreen('app');
-          setCurrentTab('dashboard');
-        }}
-        onSwitchToSignUp={() => {
-          setSignupPrefillEmail('');
-          setSignupSuccess(false);
-          setAuthScreen('signup');
-        }}
-        onBack={() => {
-          setSignupPrefillEmail('');
-          setSignupSuccess(false);
-          setAuthScreen('landing');
-        }}
-        settings={settings}
-        prefillEmail={signupPrefillEmail}
-        showSuccess={signupSuccess}
-      />
-    );
-  }
+    if (dbError && !offlineMode) {
+      return (
+        <DatabaseSetupGuide 
+          errorMessage={dbError}
+          onRefresh={async () => {
+            setDbLoading(true);
+            try {
+              const [pRes, sRes, eRes, rRes, payRes, tRes, mRes, gRes, setRes] = await Promise.all([
+                supabase.from('products').select('*'),
+                supabase.from('sales').select('*'),
+                supabase.from('expenses').select('*'),
+                supabase.from('receivables').select('*'),
+                supabase.from('payables').select('*'),
+                supabase.from('tasks').select('*'),
+                supabase.from('memos').select('*'),
+                supabase.from('goals').select('*'),
+                supabase.from('business_settings').select('*').maybeSingle()
+              ]);
 
-  if (authScreen === 'signup') {
-    return (
-      <SignUp 
-        onSuccess={() => {
-          setAuthScreen('app');
-          setCurrentTab('dashboard');
-        }}
-        onSwitchToSignIn={(email, success) => {
-          if (email) setSignupPrefillEmail(email);
-          if (success !== undefined) setSignupSuccess(success);
-          setAuthScreen('signin');
-        }}
-        onBack={() => setAuthScreen('landing')}
-        settings={settings}
-      />
-    );
-  }
+              const errors = [pRes.error, sRes.error, eRes.error, rRes.error, payRes.error, tRes.error, mRes.error, gRes.error, setRes.error].filter(Boolean);
+              const missingTableError = errors.find(e => 
+                e.code === '42P01' || 
+                e.message?.includes('relation') || 
+                e.message?.includes('schema cache') || 
+                e.message?.includes('Could not find the table') ||
+                e.message?.includes('does not exist')
+              );
 
-  if (authScreen === 'reset-password') {
-    return (
-      <ResetPassword 
-        onSuccess={() => {
-          setAuthScreen('signin');
-        }}
-        onBackToLogin={() => {
-          setAuthScreen('signin');
-        }}
-        settings={settings}
-        addToast={addToast}
-      />
-    );
-  }
-
-  if (authScreen === 'app' && dbError && !offlineMode) {
-    return (
-      <DatabaseSetupGuide 
-        errorMessage={dbError}
-        onRefresh={async () => {
-          setDbLoading(true);
-          try {
-            const [pRes, sRes, eRes, rRes, payRes, tRes, mRes, gRes, setRes] = await Promise.all([
-              supabase.from('products').select('*'),
-              supabase.from('sales').select('*'),
-              supabase.from('expenses').select('*'),
-              supabase.from('receivables').select('*'),
-              supabase.from('payables').select('*'),
-              supabase.from('tasks').select('*'),
-              supabase.from('memos').select('*'),
-              supabase.from('goals').select('*'),
-              supabase.from('business_settings').select('*').maybeSingle()
-            ]);
-
-            const errors = [pRes.error, sRes.error, eRes.error, rRes.error, payRes.error, tRes.error, mRes.error, gRes.error, setRes.error].filter(Boolean);
-            const missingTableError = errors.find(e => 
-              e.code === '42P01' || 
-              e.message?.includes('relation') || 
-              e.message?.includes('schema cache') || 
-              e.message?.includes('Could not find the table') ||
-              e.message?.includes('does not exist')
-            );
-
-            if (missingTableError) {
-              setDbError(missingTableError.message || 'Database tables are missing.');
-            } else {
-              setDbError(null);
-              if (!setRes.data) {
-                setSetupRequired(true);
-                setProducts([]);
-                setSales([]);
-                setExpenses([]);
-                setReceivables([]);
-                setPayables([]);
-                setTasks([]);
-                setMemos([]);
-                setGoals([]);
+              if (missingTableError) {
+                setDbError(missingTableError.message || 'Database tables are missing.');
               } else {
-                setSetupRequired(false);
-                setProducts(pRes.data || []);
-                setSales(sRes.data || []);
-                setExpenses(eRes.data || []);
-                setReceivables(rRes.data || []);
-                setPayables(payRes.data || []);
-                setTasks(tRes.data || []);
-                setMemos(mRes.data || []);
-                setGoals(gRes.data || []);
-                const dbSettings = setRes.data || {};
-                const storageKey = userId 
-                  ? `habesha_tracker_preferred_accounts_${userId}` 
-                  : 'habesha_tracker_preferred_accounts_default';
-                const localPrefsRaw = localStorage.getItem(storageKey);
-                let mergedSettings = { ...dbSettings };
-                if (localPrefsRaw) {
-                  try {
-                    const localPrefs = JSON.parse(localPrefsRaw);
-                    mergedSettings = { ...mergedSettings, ...localPrefs };
-                  } catch (e) {
-                    console.error('Error parsing local storage preferences', e);
+                setDbError(null);
+                if (!setRes.data) {
+                  setSetupRequired(true);
+                  setProducts([]);
+                  setSales([]);
+                  setExpenses([]);
+                  setReceivables([]);
+                  setPayables([]);
+                  setTasks([]);
+                  setMemos([]);
+                  setGoals([]);
+                } else {
+                  setSetupRequired(false);
+                  setProducts(pRes.data || []);
+                  setSales(sRes.data || []);
+                  setExpenses(eRes.data || []);
+                  setReceivables(rRes.data || []);
+                  setPayables(payRes.data || []);
+                  setTasks(tRes.data || []);
+                  setMemos(mRes.data || []);
+                  setGoals(gRes.data || []);
+                  const dbSettings = setRes.data || {};
+                  const storageKey = userId 
+                    ? `habesha_tracker_preferred_accounts_${userId}` 
+                    : 'habesha_tracker_preferred_accounts_default';
+                  const localPrefsRaw = localStorage.getItem(storageKey);
+                  let mergedSettings = { ...dbSettings };
+                  if (localPrefsRaw) {
+                    try {
+                      const localPrefs = JSON.parse(localPrefsRaw);
+                      mergedSettings = { ...mergedSettings, ...localPrefs };
+                    } catch (e) {
+                      console.error('Error parsing local storage preferences', e);
+                    }
                   }
+                  setSettings(mergedSettings as any);
                 }
-                setSettings(mergedSettings as any);
               }
+            } catch (err) {
+              console.error('Refresh error:', err);
+            } finally {
+              setDbLoading(false);
+              setIsLoaded(true);
             }
-          } catch (err) {
-            console.error('Refresh error:', err);
-          } finally {
-            setDbLoading(false);
-            setIsLoaded(true);
-          }
-        }}
-        onContinueOffline={() => {
-          setOfflineMode(true);
-          setDbError(null);
-        }}
-      />
-    );
+          }}
+          onContinueOffline={() => {
+            setOfflineMode(true);
+            setDbError(null);
+          }}
+        />
+      );
+    }
+
+    if (setupRequired) {
+      return (
+        <ProfileSetup 
+          userId={userId || ''} 
+          userEmail={userEmail}
+          onComplete={(newSettings) => {
+            setSettings(newSettings);
+            setSetupRequired(false);
+            addToast(newSettings.language === 'am' ? 'መገለጫዎ በተሳካ ሁኔታ ተዋቅሯል!' : 'Profile setup completed successfully!', 'success');
+          }}
+          onLogout={async () => {
+            await supabase.auth.signOut();
+            setAuthScreen('landing');
+            setSetupRequired(false);
+            navigate('/');
+          }}
+        />
+      );
+    }
+
+    return <>{children}</>;
   }
 
-  if (authScreen === 'app' && setupRequired) {
+  function renderWorkspace(tab: any) {
     return (
-      <ProfileSetup 
-        userId={userId || ''} 
-        userEmail={userEmail}
-        onComplete={(newSettings) => {
-          setSettings(newSettings);
-          setSetupRequired(false);
-          addToast(newSettings.language === 'am' ? 'መገለጫዎ በተሳካ ሁኔታ ተዋቅሯል!' : 'Profile setup completed successfully!', 'success');
-        }}
-        onLogout={async () => {
-          await supabase.auth.signOut();
-          setAuthScreen('landing');
-          setSetupRequired(false);
-        }}
-      />
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col lg:flex-row transition-colors duration-150">
+        
+        {/* Sidebar navigation element */}
+        <HeaderNav 
+          currentTab={tab} 
+          setCurrentTab={setCurrentTab} 
+          notifications={notifications}
+          clearNotifications={clearNotifications}
+          settings={settings}
+          setSettings={setSettings}
+          onLogout={async () => {
+            await supabase.auth.signOut();
+            addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
+            setAuthScreen('landing');
+            navigate('/');
+          }}
+        />
+          
+        {/* Scrollable workspace next to fixed sidebar */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto animate-in fade-in duration-200">
+          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+            
+            {tab === 'dashboard' && (
+              <Dashboard 
+                products={products}
+                sales={sales}
+                expenses={expenses}
+                receivables={receivables}
+                payables={payables}
+                bankBalance={bankBalance}
+                cashOnHand={cashOnHand}
+                settings={settings}
+                setCurrentTab={setCurrentTab}
+                onQuickAction={handleQuickAction}
+                setSettings={setSettings}
+              />
+            )}
+
+            {tab === 'inventory' && (
+              <Inventory 
+                products={products}
+                setProducts={setProducts}
+                setPayables={setPayables}
+                settings={settings}
+                addToast={addToast}
+                quickActionState={quickActionState}
+                setQuickActionState={setQuickActionState}
+                showConfirm={showConfirm}
+              />
+            )}
+
+            {tab === 'sales' && (
+              <SalesTracker 
+                products={products}
+                setProducts={setProducts}
+                sales={sales}
+                setSales={setSales}
+                setReceivables={setReceivables}
+                settings={settings}
+                addToast={addToast}
+                quickActionState={quickActionState}
+                setQuickActionState={setQuickActionState}
+                showConfirm={showConfirm}
+              />
+            )}
+
+            {tab === 'expenses' && (
+              <Expenses 
+                expenses={expenses}
+                setExpenses={setExpenses}
+                settings={settings}
+                addToast={addToast}
+                quickActionState={quickActionState}
+                setQuickActionState={setQuickActionState}
+                showConfirm={showConfirm}
+              />
+            )}
+
+            {tab === 'loans' && (
+              <LoansCredit 
+                receivables={receivables}
+                setReceivables={setReceivables}
+                payables={payables}
+                setPayables={setPayables}
+                settings={settings}
+                addToast={addToast}
+                showConfirm={showConfirm}
+                sales={sales}
+                setSales={setSales}
+                expenses={expenses}
+                setExpenses={setExpenses}
+              />
+            )}
+
+            {tab === 'tasks' && (
+              <PersonalTasks 
+                tasks={tasks}
+                setTasks={setTasks}
+                memos={memos}
+                setMemos={setMemos}
+                goals={goals}
+                setGoals={setGoals}
+                settings={settings}
+                addToast={addToast}
+                showConfirm={showConfirm}
+              />
+            )}
+
+            {tab === 'reports' && (
+              <Reports 
+                products={products}
+                sales={sales}
+                expenses={expenses}
+                receivables={receivables}
+                payables={payables}
+                settings={settings}
+                addToast={addToast}
+              />
+            )}
+
+            {tab === 'settings' && (
+              <Settings 
+                settings={settings}
+                setSettings={setSettings}
+                onBackup={handleBackup}
+                onRestore={handleRestore}
+                addToast={addToast}
+                onLogout={async () => {
+                  await supabase.auth.signOut();
+                  setAuthScreen('landing');
+                  addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
+                  navigate('/');
+                }}
+              />
+            )}
+            
+          </main>
+        </div>
+
+        {/* Custom Confirmation Dialog */}
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+              <h3 className="text-lg font-bold text-slate-950 dark:text-white flex items-center gap-2">
+                ⚠️ {confirmModal.title}
+              </h3>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                {confirmModal.message}
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                >
+                  {settings.language === 'am' ? 'ሰርዝ' : 'Cancel'}
+                </button>
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/20 transition"
+                >
+                  {settings.language === 'am' ? 'አረጋግጥ' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Custom Deposit / Withdrawal Bank Dialog */}
+        {bankModalState.isOpen && (
+          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <form 
+              onSubmit={handleBankModalSubmit}
+              className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150 space-y-4"
+            >
+              <h3 className="text-lg font-bold text-slate-950 dark:text-white flex items-center gap-2">
+                🏛️ {bankModalState.type === 'deposit' 
+                  ? (settings.language === 'am' ? 'ወደ ባንክ ማስገቢያ (Deposit)' : 'Deposit to Bank')
+                  : (settings.language === 'am' ? 'ከባንክ ማውጫ (Withdraw)' : 'Withdraw from Bank')
+                }
+              </h3>
+              
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {bankModalState.type === 'deposit'
+                  ? (settings.language === 'am' 
+                      ? `ከእጅ ጥሬ ገንዘብ ወደ CBE / Awash / Telebirr ባንክ ያስገቡ።` 
+                      : `Transfer cash on hand to your Bank ledger.`)
+                  : (settings.language === 'am'
+                      ? `ከባንክ ወደ እጅ ጥሬ ገንዘብ ያውጡ።`
+                      : `Withdraw funds from Bank ledger into Cash on hand.`)
+                }
+              </p>
+
+              <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 flex justify-between text-xs font-semibold">
+                <div>
+                  <p className="text-slate-400 text-[10px] uppercase">{settings.language === 'am' ? 'በእጅ ያለ ጥሬ ገንዘብ' : 'Cash On Hand'}</p>
+                  <p className="text-slate-800 dark:text-slate-200 mt-1 font-mono">{cashOnHand.toLocaleString()} {settings.currency}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-slate-400 text-[10px] uppercase">{settings.language === 'am' ? 'የባንክ ሒሳብ' : 'Bank Balance'}</p>
+                  <p className="text-slate-800 dark:text-slate-200 mt-1 font-mono">{bankBalance.toLocaleString()} {settings.currency}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  {settings.language === 'am' ? 'የብር መጠን' : 'Amount (ETB)'}
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  placeholder="e.g. 5000"
+                  value={bankModalAmount}
+                  onChange={(e) => setBankModalAmount(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-950 text-slate-800 dark:text-white focus:outline-hidden focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBankModalState(prev => ({ ...prev, isOpen: false }));
+                    setBankModalAmount('');
+                  }}
+                  className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                >
+                  {settings.language === 'am' ? 'ሰርዝ' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 transition"
+                >
+                  {settings.language === 'am' ? 'አረጋግጥ' : 'Confirm'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col lg:flex-row transition-colors duration-150">
-      
-      {/* Sidebar navigation element */}
-      <HeaderNav 
-        currentTab={currentTab} 
-        setCurrentTab={setCurrentTab} 
-        notifications={notifications}
-        clearNotifications={clearNotifications}
-        settings={settings}
-        setSettings={setSettings}
-        onLogout={async () => {
-          await supabase.auth.signOut();
-          setAuthScreen('landing');
-          addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
-        }}
-      />
-        
-      {/* Scrollable workspace next to fixed sidebar */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
-          
-          {currentTab === 'dashboard' && (
-            <Dashboard 
-              products={products}
-              sales={sales}
-              expenses={expenses}
-              receivables={receivables}
-              payables={payables}
-              bankBalance={bankBalance}
-              cashOnHand={cashOnHand}
-              settings={settings}
-              setCurrentTab={setCurrentTab}
-              onQuickAction={handleQuickAction}
-              setSettings={setSettings}
-            />
-          )}
+    <>
+      <Routes>
+        {/* Public SaaS Pages */}
+        <Route path="/" element={
+          <LandingPage 
+            onEnterApp={() => {
+              setOfflineMode(true);
+              setUserId('demo-offline-user');
+              setAuthScreen('app');
+              setCurrentTab('dashboard');
+              navigate('/dashboard');
+            }} 
+            onLoginClick={() => {
+              setSignupPrefillEmail('');
+              setSignupSuccess(false);
+              setAuthScreen('signin');
+              navigate('/login');
+            }}
+            onSignUpClick={() => {
+              setSignupPrefillEmail('');
+              setSignupSuccess(false);
+              setAuthScreen('signup');
+              navigate('/signup');
+            }}
+            settings={settings} 
+            setSettings={setSettings} 
+          />
+        } />
+        <Route path="/features" element={<FeaturesPage settings={settings} setSettings={setSettings} />} />
+        <Route path="/about" element={<AboutPage settings={settings} setSettings={setSettings} />} />
+        <Route path="/contact" element={<ContactPage settings={settings} setSettings={setSettings} />} />
+        <Route path="/faq" element={<FAQPage settings={settings} setSettings={setSettings} />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage settings={settings} setSettings={setSettings} />} />
+        <Route path="/terms-of-service" element={<TermsOfServicePage settings={settings} setSettings={setSettings} />} />
+        <Route path="/refund-policy" element={<RefundPolicyPage settings={settings} setSettings={setSettings} />} />
 
-          {currentTab === 'inventory' && (
-            <Inventory 
-              products={products}
-              setProducts={setProducts}
-              setPayables={setPayables}
-              settings={settings}
-              addToast={addToast}
-              quickActionState={quickActionState}
-              setQuickActionState={setQuickActionState}
-              showConfirm={showConfirm}
-            />
-          )}
-
-          {currentTab === 'sales' && (
-            <SalesTracker 
-              products={products}
-              setProducts={setProducts}
-              sales={sales}
-              setSales={setSales}
-              setReceivables={setReceivables}
-              settings={settings}
-              addToast={addToast}
-              quickActionState={quickActionState}
-              setQuickActionState={setQuickActionState}
-              showConfirm={showConfirm}
-            />
-          )}
-
-          {currentTab === 'expenses' && (
-            <Expenses 
-              expenses={expenses}
-              setExpenses={setExpenses}
-              settings={settings}
-              addToast={addToast}
-              quickActionState={quickActionState}
-              setQuickActionState={setQuickActionState}
-              showConfirm={showConfirm}
-            />
-          )}
-
-          {currentTab === 'loans' && (
-            <LoansCredit 
-              receivables={receivables}
-              setReceivables={setReceivables}
-              payables={payables}
-              setPayables={setPayables}
-              settings={settings}
-              addToast={addToast}
-              showConfirm={showConfirm}
-              sales={sales}
-              setSales={setSales}
-              expenses={expenses}
-              setExpenses={setExpenses}
-            />
-          )}
-
-          {currentTab === 'tasks' && (
-            <PersonalTasks 
-              tasks={tasks}
-              setTasks={setTasks}
-              memos={memos}
-              setMemos={setMemos}
-              goals={goals}
-              setGoals={setGoals}
-              settings={settings}
-              addToast={addToast}
-              showConfirm={showConfirm}
-            />
-          )}
-
-          {currentTab === 'reports' && (
-            <Reports 
-              products={products}
-              sales={sales}
-              expenses={expenses}
-              receivables={receivables}
-              payables={payables}
-              settings={settings}
-              addToast={addToast}
-            />
-          )}
-
-          {currentTab === 'settings' && (
-            <Settings 
-              settings={settings}
-              setSettings={setSettings}
-              onBackup={handleBackup}
-              onRestore={handleRestore}
-              addToast={addToast}
-              onLogout={async () => {
-                await supabase.auth.signOut();
-                setAuthScreen('landing');
-                addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
+        {/* Auth Pages */}
+        <Route path="/login" element={
+          userId ? <Navigate to="/dashboard" replace /> : (
+            <SignIn 
+              onSuccess={() => {
+                setSignupPrefillEmail('');
+                setSignupSuccess(false);
+                setAuthScreen('app');
+                setCurrentTab('dashboard');
+                navigate('/dashboard');
               }}
+              onSwitchToSignUp={() => {
+                setSignupPrefillEmail('');
+                setSignupSuccess(false);
+                setAuthScreen('signup');
+                navigate('/signup');
+              }}
+              onBack={() => {
+                setSignupPrefillEmail('');
+                setSignupSuccess(false);
+                setAuthScreen('landing');
+                navigate('/');
+              }}
+              settings={settings}
+              prefillEmail={signupPrefillEmail}
+              showSuccess={signupSuccess}
             />
-          )}
+          )
+        } />
+        <Route path="/signup" element={
+          userId ? <Navigate to="/dashboard" replace /> : (
+            <SignUp 
+              onSuccess={() => {
+                setAuthScreen('app');
+                setCurrentTab('dashboard');
+                navigate('/dashboard');
+              }}
+              onSwitchToSignIn={(email, success) => {
+                if (email) setSignupPrefillEmail(email);
+                if (success !== undefined) setSignupSuccess(success);
+                setAuthScreen('signin');
+                navigate('/login');
+              }}
+              onBack={() => {
+                setAuthScreen('landing');
+                navigate('/');
+              }}
+              settings={settings}
+            />
+          )
+        } />
+        <Route path="/forgot-password" element={
+          userId ? <Navigate to="/dashboard" replace /> : (
+            <SignIn 
+              onSuccess={() => {
+                setSignupPrefillEmail('');
+                setSignupSuccess(false);
+                setAuthScreen('app');
+                setCurrentTab('dashboard');
+                navigate('/dashboard');
+              }}
+              onSwitchToSignUp={() => {
+                setSignupPrefillEmail('');
+                setSignupSuccess(false);
+                setAuthScreen('signup');
+                navigate('/signup');
+              }}
+              onBack={() => {
+                setSignupPrefillEmail('');
+                setSignupSuccess(false);
+                setAuthScreen('landing');
+                navigate('/');
+              }}
+              settings={settings}
+              prefillEmail={signupPrefillEmail}
+              showSuccess={signupSuccess}
+            />
+          )
+        } />
+        <Route path="/reset-password" element={
+          <ResetPassword 
+            onSuccess={() => {
+              setAuthScreen('signin');
+              navigate('/login');
+            }}
+            onBackToLogin={() => {
+              setAuthScreen('signin');
+              navigate('/login');
+            }}
+            settings={settings}
+            addToast={addToast}
+          />
+        } />
 
-        </main>
-      </div>
+        {/* Authenticated ERP Workspace Dashboard Pages */}
+        <Route path="/dashboard" element={<RequireAuth>{renderWorkspace('dashboard')}</RequireAuth>} />
+        <Route path="/inventory" element={<RequireAuth>{renderWorkspace('inventory')}</RequireAuth>} />
+        <Route path="/sales" element={<RequireAuth>{renderWorkspace('sales')}</RequireAuth>} />
+        <Route path="/expenses" element={<RequireAuth>{renderWorkspace('expenses')}</RequireAuth>} />
+        <Route path="/loans" element={<RequireAuth>{renderWorkspace('loans')}</RequireAuth>} />
+        <Route path="/tasks" element={<RequireAuth>{renderWorkspace('tasks')}</RequireAuth>} />
+        <Route path="/reports" element={<RequireAuth>{renderWorkspace('reports')}</RequireAuth>} />
+        <Route path="/settings" element={<RequireAuth>{renderWorkspace('settings')}</RequireAuth>} />
 
-      {/* Custom Confirmation Dialog */}
-      {confirmModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
-            <h3 className="text-lg font-bold text-slate-950 dark:text-white flex items-center gap-2">
-              ⚠️ {confirmModal.title}
-            </h3>
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-              {confirmModal.message}
-            </p>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-              >
-                {settings.language === 'am' ? 'ሰርዝ' : 'Cancel'}
-              </button>
-              <button
-                onClick={confirmModal.onConfirm}
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/20 transition"
-              >
-                {settings.language === 'am' ? 'አረጋግጥ' : 'Confirm'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Custom Deposit / Withdrawal Bank Dialog */}
-      {bankModalState.isOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <form 
-            onSubmit={handleBankModalSubmit}
-            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150 space-y-4"
-          >
-            <h3 className="text-lg font-bold text-slate-950 dark:text-white flex items-center gap-2">
-              🏛️ {bankModalState.type === 'deposit' 
-                ? (settings.language === 'am' ? 'ወደ ባንክ ማስገቢያ (Deposit)' : 'Deposit to Bank')
-                : (settings.language === 'am' ? 'ከባንክ ማውጫ (Withdraw)' : 'Withdraw from Bank')
-              }
-            </h3>
-            
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {bankModalState.type === 'deposit'
-                ? (settings.language === 'am' 
-                    ? `ከእጅ ጥሬ ገንዘብ ወደ CBE / Awash / Telebirr ባንክ ያስገቡ።` 
-                    : `Transfer cash on hand to your Bank ledger.`)
-                : (settings.language === 'am'
-                    ? `ከባንክ ወደ እጅ ጥሬ ገንዘብ ያውጡ።`
-                    : `Withdraw funds from Bank ledger into Cash on hand.`)
-              }
-            </p>
-
-            <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800/80 flex justify-between text-xs font-semibold">
-              <div>
-                <p className="text-slate-400 text-[10px] uppercase">{settings.language === 'am' ? 'በእጅ ያለ ጥሬ ገንዘብ' : 'Cash On Hand'}</p>
-                <p className="text-slate-800 dark:text-slate-200 mt-1 font-mono">{cashOnHand.toLocaleString()} {settings.currency}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-slate-400 text-[10px] uppercase">{settings.language === 'am' ? 'የባንክ ሒሳብ' : 'Bank Balance'}</p>
-                <p className="text-slate-800 dark:text-slate-200 mt-1 font-mono">{bankBalance.toLocaleString()} {settings.currency}</p>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                {settings.language === 'am' ? 'የብር መጠን' : 'Amount (ETB)'}
-              </label>
-              <input
-                type="number"
-                required
-                min="1"
-                placeholder="e.g. 5000"
-                value={bankModalAmount}
-                onChange={(e) => setBankModalAmount(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-950 text-slate-800 dark:text-white focus:outline-hidden focus:border-indigo-500"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setBankModalState(prev => ({ ...prev, isOpen: false }));
-                  setBankModalAmount('');
-                }}
-                className="px-4 py-2 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-              >
-                {settings.language === 'am' ? 'ሰርዝ' : 'Cancel'}
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-600/20 transition"
-              >
-                {settings.language === 'am' ? 'አረጋግጥ' : 'Confirm'}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+        {/* Fallback Catch All */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       {/* Floating sliding notification custom Toasts drawer */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">
@@ -1439,7 +1556,6 @@ export default function App() {
           </div>
         ))}
       </div>
-
-    </div>
+    </>
   );
 }
