@@ -62,6 +62,92 @@ export default function MetaTags({ title, description, canonicalUrl, isAmharic =
     setMetaTag('name', 'twitter:description', description);
     setMetaTag('name', 'twitter:image', 'https://habeshatracker.com/og-image.png');
 
+    // 8. Dynamic Structured Data JSON-LD
+    const setStructuredData = () => {
+      let script = document.getElementById('structured-data-json');
+      if (!script) {
+        script = document.createElement('script');
+        script.setAttribute('id', 'structured-data-json');
+        script.setAttribute('type', 'application/ld+json');
+        document.head.appendChild(script);
+      }
+      
+      const schemas = [
+        {
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "@id": "https://habeshatracker.com/#organization",
+          "name": "Habesha Tracker",
+          "url": "https://habeshatracker.com",
+          "logo": "https://habeshatracker.com/apple-touch-icon.png",
+          "sameAs": [
+            "https://t.me/Manbuza12"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+251986580996",
+            "contactType": "customer support",
+            "email": "buzayehuteshome123@gmail.com",
+            "availableLanguage": ["Amharic", "English"]
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          "@id": "https://habeshatracker.com/#software",
+          "name": "Habesha Tracker",
+          "operatingSystem": "All",
+          "applicationCategory": "BusinessApplication",
+          "description": description || "Optimized business management ERP for Ethiopian enterprises. Track sales, inventory, expenses, CBE records, telebirr, and client loans in English and Amharic.",
+          "offers": {
+            "@type": "Offer",
+            "price": "199.00",
+            "priceCurrency": "ETB",
+            "priceSpecification": {
+              "@type": "PriceSpecification",
+              "price": "199.00",
+              "priceCurrency": "ETB",
+              "description": "Founding Merchant Plan per month"
+            }
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.9",
+            "ratingCount": "1250"
+          },
+          "author": {
+            "@type": "Organization",
+            "name": "Habesha Tracker Dev Group",
+            "url": "https://habeshatracker.com"
+          }
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "@id": "https://habeshatracker.com/#website",
+          "name": "Habesha Tracker",
+          "url": "https://habeshatracker.com",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://habeshatracker.com/?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ];
+
+      script.textContent = JSON.stringify(schemas, null, 2);
+    };
+
+    setStructuredData();
+
+    // Clean up dynamic structured data script tag on unmount (optional, but clean)
+    return () => {
+      const script = document.getElementById('structured-data-json');
+      if (script) {
+        script.remove();
+      }
+    };
+
   }, [title, description, canonicalUrl, isAmharic]);
 
   return null;
