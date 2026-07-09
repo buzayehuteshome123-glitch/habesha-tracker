@@ -215,6 +215,102 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Dynamic SEO Metatags & Indexability Control based on Auth Screen & App State
+  useEffect(() => {
+    const isAmharic = settings.language === 'am';
+    let title = 'Habesha Tracker - All-in-One ERP & Finance Suite';
+    let description = 'Optimized business management ERP for Ethiopian enterprises. Track sales, inventory, expenses, CBE bank records, telebirr transactions, and customer loans in English and Amharic.';
+    let robots = 'index, follow';
+    let canonical = 'https://habeshatracker.com';
+
+    // Configure SEO values based on active screen
+    if (authScreen === 'landing') {
+      title = isAmharic 
+        ? 'ሀበሻ ትራከር - ለኢትዮጵያ ንግዶች የተዘጋጀ የሂሳብና ንግድ ማስተዳደሪያ' 
+        : 'Habesha Tracker - ERP & Financial Management for Ethiopian Businesses';
+      description = isAmharic 
+        ? 'የኢትዮጵያ ንግድዎን በሀበሻ ትራከር ያሳድጉ። ሽያጭን፣ ወጪን፣ ክምችትን፣ CBEን፣ ቴሌቢርን እና የብድር ግብይቶችን በእንግሊዝኛ እና በአማርኛ ይከታተሉ።' 
+        : 'Optimize your Ethiopian business with Habesha Tracker. Track sales, expenses, inventory, telebirr, CBE, and credit transactions in English and Amharic.';
+      robots = 'index, follow';
+      canonical = 'https://habeshatracker.com/';
+    } else if (authScreen === 'signin') {
+      title = isAmharic ? 'ግባ - ሀበሻ ትራከር' : 'Login - Habesha Tracker';
+      description = isAmharic 
+        ? 'ሽያጮችን፣ ወጪዎችን፣ ክምችቶችን እና ብድሮችን ለመቆጣጠር ወደ ሀበሻ ትራከር አካውንትዎ ይግቡ።' 
+        : 'Sign in to your Habesha Tracker account to manage your sales, expenses, inventory, and loans.';
+      robots = 'index, follow';
+      canonical = 'https://habeshatracker.com/login';
+    } else if (authScreen === 'signup') {
+      title = isAmharic ? 'ተመዝገብ - ሀበሻ ትራከር' : 'Sign Up - Habesha Tracker';
+      description = isAmharic 
+        ? 'ነፃ የሀበሻ ትራከር አካውንት ይፍጠሩ እና የንግድዎን የፋይናንስ እንቅስቃሴዎች መከታተል ይጀምሩ።' 
+        : 'Create your free Habesha Tracker account and start tracking your business financial operations.';
+      robots = 'index, follow';
+      canonical = 'https://habeshatracker.com/signup';
+    } else if (authScreen === 'reset-password') {
+      title = isAmharic ? 'የይለፍ ቃል መቀየር - ሀበሻ ትራከር' : 'Reset Password - Habesha Tracker';
+      description = isAmharic 
+        ? 'ለሀበሻ ትራከር አካውንትዎ አዲስ አስተማማኝ የይለፍ ቃል ያስቀምጡ።' 
+        : 'Set a new secure password for your Habesha Tracker account.';
+      robots = 'noindex, nofollow'; // Security boundary: avoid indexing recovery token pages
+      canonical = 'https://habeshatracker.com/reset-password';
+    } else if (authScreen === 'app') {
+      title = isAmharic ? 'ዳሽቦርድ - ሀበሻ ትራከር ERP' : 'Dashboard - Habesha Tracker ERP';
+      description = 'Habesha Tracker authenticated merchant portal.';
+      robots = 'noindex, nofollow'; // Privacy/Security boundary: strictly exclude authenticated business dashboard from crawling
+      canonical = 'https://habeshatracker.com/dashboard';
+    }
+
+    // Apply SEO update to head elements dynamically
+    document.title = title;
+    
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', description);
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = description;
+      document.head.appendChild(meta);
+    }
+
+    const metaRobots = document.getElementById('meta-robots') || document.querySelector('meta[name="robots"]');
+    if (metaRobots) {
+      metaRobots.setAttribute('content', robots);
+    } else {
+      const meta = document.createElement('meta');
+      meta.id = 'meta-robots';
+      meta.name = 'robots';
+      meta.content = robots;
+      document.head.appendChild(meta);
+    }
+
+    const linkCanonical = document.getElementById('meta-canonical') || document.querySelector('link[rel="canonical"]');
+    if (linkCanonical) {
+      linkCanonical.setAttribute('href', canonical);
+    } else {
+      const link = document.createElement('link');
+      link.id = 'meta-canonical';
+      link.rel = 'canonical';
+      link.href = canonical;
+      document.head.appendChild(link);
+    }
+
+    // Set og:url and og:title as well to keep them in perfect sync
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', title);
+    
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', description);
+    
+    const ogUrl = document.querySelector('meta[property="og:url"]');
+    if (ogUrl) ogUrl.setAttribute('content', canonical);
+
+    // Update html lang attribute
+    document.documentElement.lang = isAmharic ? 'am' : 'en';
+
+  }, [authScreen, settings.language]);
+
   // Automatic inactivity logout mechanism (15 minutes default)
   useEffect(() => {
     if (!userId || offlineMode) return;

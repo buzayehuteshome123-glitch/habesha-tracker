@@ -1,0 +1,18 @@
+# Robots.txt for Habesha Tracker - ERP & Finance Suite
+User-agent: *
+
+# Allow search engine indexing on public pages
+Allow: /$
+Allow: /login
+Allow: /signup
+Allow: /reset-password
+
+# Prevent search engine indexing on private, authenticated dashboard routes and API endpoints
+Disallow: /dashboard
+Disallow: /app
+Disallow: /api/
+Disallow: /settings
+Disallow: /profile-setup
+
+# Link to the dynamic sitemap
+Sitemap: https://habeshatracker.com/sitemap.xml

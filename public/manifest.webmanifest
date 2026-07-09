@@ -1,0 +1,23 @@
+{
+  "name": "Habesha Tracker",
+  "short_name": "HabeshaTracker",
+  "description": "All-in-one ERP & financial management suite for Ethiopian businesses. Track sales, inventory, expenses, CBE, and telebirr.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F172A",
+  "theme_color": "#16A34A",
+  "orientation": "portrait",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

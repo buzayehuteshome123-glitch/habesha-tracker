@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16A34A" />
+      <stop offset="100%" stop-color="#2563EB" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="100%" stop-color="#34D399" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+  
+  <!-- Outer Rounded Square Frame -->
+  <rect width="512" height="512" rx="128" fill="#0F172A" />
+  
+  <!-- Intertwined Geometric Finance/ERP Nodes & Waves -->
+  <g filter="url(#shadow)">
+    <!-- Main rising dynamic trend curve -->
+    <path d="M120 380 Q 200 380, 240 260 T 380 140" fill="none" stroke="url(#grad1)" stroke-width="48" stroke-linecap="round" />
+    
+    <!-- Secondary intersecting flow representing tracking and balanced ledger -->
+    <path d="M120 260 Q 220 180, 280 280 T 380 340" fill="none" stroke="url(#grad2)" stroke-width="24" stroke-linecap="round" opacity="0.85" />
+    
+    <!-- Elegant nodes at key transition steps -->
+    <circle cx="120" cy="380" r="32" fill="#16A34A" />
+    <circle cx="240" cy="260" r="28" fill="#2563EB" />
+    <circle cx="380" cy="140" r="36" fill="#34D399" />
+    
+    <!-- Accent core inside top node -->
+    <circle cx="380" cy="140" r="16" fill="#FFFFFF" />
+  </g>
+</svg>
