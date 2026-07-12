@@ -1,28 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import HeaderNav from './components/HeaderNav';
-import Dashboard from './components/Dashboard';
-import Inventory from './components/Inventory';
-import SalesTracker from './components/SalesTracker';
-import Expenses from './components/Expenses';
-import LoansCredit from './components/LoansCredit';
-import PersonalTasks from './components/PersonalTasks';
-import Reports from './components/Reports';
-import Settings from './components/Settings';
-import LandingPage from './components/LandingPage';
-import SignIn from './components/SignIn';
-import SignUp from './components/SignUp';
-import ProfileSetup from './components/ProfileSetup';
-import DatabaseSetupGuide from './components/DatabaseSetupGuide';
-import ResetPassword from './components/ResetPassword';
 import { supabase } from './lib/supabase';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import FeaturesPage from './components/FeaturesPage';
-import AboutPage from './components/AboutPage';
-import ContactPage from './components/ContactPage';
-import FAQPage from './components/FAQPage';
-import PrivacyPolicyPage from './components/PrivacyPolicyPage';
-import TermsOfServicePage from './components/TermsOfServicePage';
-import RefundPolicyPage from './components/RefundPolicyPage';
+
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const Inventory = React.lazy(() => import('./components/Inventory'));
+const SalesTracker = React.lazy(() => import('./components/SalesTracker'));
+const Expenses = React.lazy(() => import('./components/Expenses'));
+const LoansCredit = React.lazy(() => import('./components/LoansCredit'));
+const PersonalTasks = React.lazy(() => import('./components/PersonalTasks'));
+const Reports = React.lazy(() => import('./components/Reports'));
+const Settings = React.lazy(() => import('./components/Settings'));
+const LandingPage = React.lazy(() => import('./components/LandingPage'));
+const SignIn = React.lazy(() => import('./components/SignIn'));
+const SignUp = React.lazy(() => import('./components/SignUp'));
+const ProfileSetup = React.lazy(() => import('./components/ProfileSetup'));
+const DatabaseSetupGuide = React.lazy(() => import('./components/DatabaseSetupGuide'));
+const ResetPassword = React.lazy(() => import('./components/ResetPassword'));
+const FeaturesPage = React.lazy(() => import('./components/FeaturesPage'));
+const AboutPage = React.lazy(() => import('./components/AboutPage'));
+const ContactPage = React.lazy(() => import('./components/ContactPage'));
+const FAQPage = React.lazy(() => import('./components/FAQPage'));
+const PrivacyPolicyPage = React.lazy(() => import('./components/PrivacyPolicyPage'));
+const TermsOfServicePage = React.lazy(() => import('./components/TermsOfServicePage'));
+const RefundPolicyPage = React.lazy(() => import('./components/RefundPolicyPage'));
+
 
 import { 
   Product, 
@@ -73,27 +75,35 @@ export function AppContent() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [memos, setMemos] = useState<Memo[]>([]);
   const [goals, setGoals] = useState<DailyGoal[]>([]);
-  const [settings, setSettings] = useState<BusinessSettings>({
-    businessName: 'My Habesha Business',
-    address: 'Addis Ababa, Ethiopia',
-    phone: '',
-    email: '',
-    currency: 'ETB',
-    language: 'en',
-    theme: 'dark',
-    bankAdjust: 0,
-    cashAdjust: 0,
-    preferCBE: true,
-    preferTelebirr: true,
-    preferEBirr: true,
-    preferSinqee: false,
-    preferOther: false,
-    startingCBE: 0,
-    startingTelebirr: 0,
-    startingEBirr: 0,
-    startingSinqee: 0,
-    startingOther: 0,
-    startingCash: 0
+  const [settings, setSettings] = useState<BusinessSettings>(() => {
+    try {
+      const cached = localStorage.getItem('ht_cached_settings_default');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {}
+    return {
+      businessName: 'My Habesha Business',
+      address: 'Addis Ababa, Ethiopia',
+      phone: '',
+      email: '',
+      currency: 'ETB',
+      language: 'en',
+      theme: 'dark',
+      bankAdjust: 0,
+      cashAdjust: 0,
+      preferCBE: true,
+      preferTelebirr: true,
+      preferEBirr: true,
+      preferSinqee: false,
+      preferOther: false,
+      startingCBE: 0,
+      startingTelebirr: 0,
+      startingEBirr: 0,
+      startingSinqee: 0,
+      startingOther: 0,
+      startingCash: 0
+    };
   });
 
   // Track database loading and user identification
@@ -104,6 +114,17 @@ export function AppContent() {
   const [dbLoading, setDbLoading] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState<boolean>(false);
+  const [secondaryLoaded, setSecondaryLoaded] = useState<boolean>(false);
+
+  // Sync settings changes to local cache for instant reload capability
+  useEffect(() => {
+    try {
+      localStorage.setItem('ht_cached_settings_default', JSON.stringify(settings));
+      if (userId) {
+        localStorage.setItem(`ht_cached_settings_${userId}`, JSON.stringify(settings));
+      }
+    } catch (e) {}
+  }, [settings, userId]);
 
   // Notifications bell array
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -190,6 +211,7 @@ export function AppContent() {
         setUserId(null);
         setUserEmail('');
         setSetupRequired(false);
+        setSecondaryLoaded(false);
         setAuthScreen(current => {
           if (current === 'signin' || current === 'signup' || current === 'reset-password') {
             return current;
@@ -219,6 +241,7 @@ export function AppContent() {
         setUserEmail('');
         setSetupRequired(false);
         setOfflineMode(false);
+        setSecondaryLoaded(false);
         setAuthScreen(current => {
           if (current === 'app') {
             return 'landing';
@@ -372,14 +395,14 @@ export function AppContent() {
     };
   }, [userId, settings.language, userEmail]);
 
-  // Fetch all user data when authenticated user is set
+  // Fetch core dashboard data when authenticated user is set (SWR + Column Selective + Pagination Optimized)
   useEffect(() => {
     if (!userId) {
       setIsLoaded(false);
       return;
     }
 
-    const loadAllUserData = async () => {
+    const loadCoreUserData = async () => {
       if (offlineMode) {
         setDbLoading(false);
         setIsLoaded(true);
@@ -387,22 +410,31 @@ export function AppContent() {
         setDbError(null);
         return;
       }
+
+      // SWR (Stale-While-Revalidate) Cache retrieval
+      const cachedSettingsRaw = localStorage.getItem(`ht_cached_settings_${userId}`);
+      if (cachedSettingsRaw) {
+        try {
+          const cachedSettings = JSON.parse(cachedSettingsRaw);
+          setSettings(cachedSettings);
+          // Render instantly using cached settings
+          setIsLoaded(true);
+        } catch (e) {}
+      }
+
       setDbLoading(true);
       setDbError(null);
       try {
-        const [pRes, sRes, eRes, rRes, payRes, tRes, mRes, gRes, setRes] = await Promise.all([
-          supabase.from('products').select('*').eq('userId', userId),
-          supabase.from('sales').select('*').eq('userId', userId),
-          supabase.from('expenses').select('*').eq('userId', userId),
-          supabase.from('receivables').select('*').eq('userId', userId),
-          supabase.from('payables').select('*').eq('userId', userId),
-          supabase.from('tasks').select('*').eq('userId', userId),
-          supabase.from('memos').select('*').eq('userId', userId),
-          supabase.from('goals').select('*').eq('userId', userId),
-          supabase.from('business_settings').select('*').eq('userId', userId).maybeSingle()
+        // Query ONLY 5 core dashboard tables, with selective columns and range pagination limits
+        const [sRes, eRes, rRes, payRes, setRes] = await Promise.all([
+          supabase.from('sales').select('id, items, customerName, paymentMethod, date, notes, grossSale, cost, profit').eq('userId', userId).order('date', { ascending: false }).range(0, 100),
+          supabase.from('expenses').select('id, name, category, amount, paymentMethod, date, description').eq('userId', userId).order('date', { ascending: false }).range(0, 100),
+          supabase.from('receivables').select('id, customer, phone, amount, dueDate, status').eq('userId', userId).range(0, 100),
+          supabase.from('payables').select('id, supplier, amount, dueDate, status').eq('userId', userId).range(0, 100),
+          supabase.from('business_settings').select('userId, businessName, address, phone, email, currency, language, theme, bankAdjust, cashAdjust, ownerName, preferCBE, preferTelebirr, preferEBirr, preferSinqee, preferOther, startingCBE, startingTelebirr, startingEBirr, startingSinqee, startingOther, startingCash').eq('userId', userId).maybeSingle()
         ]);
 
-        const errors = [pRes.error, sRes.error, eRes.error, rRes.error, payRes.error, tRes.error, mRes.error, gRes.error, setRes.error].filter(Boolean);
+        const errors = [sRes.error, eRes.error, rRes.error, payRes.error, setRes.error].filter(Boolean);
         const missingTableError = errors.find(e => 
           e.code === '42P01' || 
           e.message?.includes('relation') || 
@@ -422,28 +454,19 @@ export function AppContent() {
         if (!setRes.data) {
           // New user setup required - do not seed any demo data
           setSetupRequired(true);
-          setProducts([]);
           setSales([]);
           setExpenses([]);
           setReceivables([]);
           setPayables([]);
-          setTasks([]);
-          setMemos([]);
-          setGoals([]);
         } else {
           setSetupRequired(false);
-          setProducts(pRes.data || []);
           setSales(sRes.data || []);
           setExpenses(eRes.data || []);
           setReceivables(rRes.data || []);
           setPayables(payRes.data || []);
-          setTasks(tRes.data || []);
-          setMemos(mRes.data || []);
-          setGoals(gRes.data || []);
+          
           const dbSettings = setRes.data || {};
-          const storageKey = userId 
-            ? `habesha_tracker_preferred_accounts_${userId}` 
-            : 'habesha_tracker_preferred_accounts_default';
+          const storageKey = `habesha_tracker_preferred_accounts_${userId}`;
           const localPrefsRaw = localStorage.getItem(storageKey);
           let mergedSettings = { ...dbSettings };
           if (localPrefsRaw) {
@@ -455,9 +478,11 @@ export function AppContent() {
             }
           }
           setSettings(mergedSettings as any);
+          // Update SWR cache
+          localStorage.setItem(`ht_cached_settings_${userId}`, JSON.stringify(mergedSettings));
         }
       } catch (err) {
-        console.error('Error loading data from Supabase:', err);
+        console.error('Error loading core data from Supabase:', err);
         addToast('Error synchronizing with Supabase database. Operating in local mode.', 'warning');
       } finally {
         setDbLoading(false);
@@ -465,8 +490,41 @@ export function AppContent() {
       }
     };
 
-    loadAllUserData();
+    loadCoreUserData();
   }, [userId, offlineMode]);
+
+  // Background deferred lazy load of secondary tables (products, tasks, memos, goals)
+  useEffect(() => {
+    if (!userId || !isLoaded || offlineMode || secondaryLoaded) return;
+
+    const loadSecondaryData = async () => {
+      try {
+        // Fetch secondary tables with specified columns and range limits
+        const [pRes, tRes, mRes, gRes] = await Promise.all([
+          supabase.from('products').select('id, nameEn, nameAm, category, sku, unit, purchasePrice, sellingPrice, currentStock, minStock, supplier, description').eq('userId', userId).range(0, 150),
+          supabase.from('tasks').select('id, text, completed').eq('userId', userId).range(0, 100),
+          supabase.from('memos').select('id, title, content, isPinned, date').eq('userId', userId).range(0, 100),
+          supabase.from('goals').select('id, text, completed').eq('userId', userId).range(0, 100)
+        ]);
+
+        if (pRes.data) setProducts(pRes.data);
+        if (tRes.data) setTasks(tRes.data);
+        if (mRes.data) setMemos(mRes.data);
+        if (gRes.data) setGoals(gRes.data);
+
+        setSecondaryLoaded(true);
+      } catch (e) {
+        console.error('Failed to load secondary background user data:', e);
+      }
+    };
+
+    // Stagger loading by 200ms to allow First Contentful Paint and page entrance transitions to complete at 60FPS
+    const timeout = setTimeout(() => {
+      loadSecondaryData();
+    }, 200);
+
+    return () => clearTimeout(timeout);
+  }, [userId, isLoaded, offlineMode, secondaryLoaded]);
 
   // QuickAction bridge
   const [quickActionState, setQuickActionState] = useState<{ type: string; itemId?: string } | null>(null);
@@ -542,41 +600,28 @@ export function AppContent() {
     }
   };
 
-  // Bank & Cash calculations (dynamic base ledger)
-  const [bankBalance, setBankBalance] = useState(0);
-  const [cashOnHand, setCashOnHand] = useState(0);
-
-  // Synchronize dynamic balances on any transactions ledger change
-  useEffect(() => {
+  // Bank & Cash calculations (dynamic base ledger computed via useMemo to prevent redundant state re-renders)
+  const bankBalance = useMemo(() => {
     let salesBank = 0;
-    let salesCash = 0;
     sales.forEach(s => {
-      if (s.paymentMethod === 'Cash') {
-        salesCash += s.grossSale;
-      } else {
+      if (s.paymentMethod !== 'Cash') {
         salesBank += s.grossSale;
       }
     });
 
     let expensesBank = 0;
-    let expensesCash = 0;
     expenses.forEach(e => {
-      if (e.paymentMethod === 'Cash') {
-        expensesCash += e.amount;
-      } else {
+      if (e.paymentMethod !== 'Cash') {
         expensesBank += e.amount;
       }
     });
 
     const bankAdjust = settings.bankAdjust || 0;
-    const cashAdjust = settings.cashAdjust || 0;
-
     const startingCBE = settings.startingCBE ?? 0;
     const startingTelebirr = settings.startingTelebirr ?? 0;
     const startingEBirr = settings.startingEBirr ?? 0;
     const startingSinqee = settings.startingSinqee ?? 0;
     const startingOther = settings.startingOther ?? 0;
-    const startingCash = settings.startingCash ?? 0;
 
     const totalStartingBank = 
       (settings.preferCBE ? startingCBE : 0) +
@@ -585,8 +630,28 @@ export function AppContent() {
       (settings.preferSinqee ? startingSinqee : 0) +
       (settings.preferOther ? startingOther : 0);
 
-    setBankBalance(totalStartingBank + salesBank - expensesBank + bankAdjust);
-    setCashOnHand(startingCash + salesCash - expensesCash + cashAdjust);
+    return totalStartingBank + salesBank - expensesBank + bankAdjust;
+  }, [sales, expenses, settings]);
+
+  const cashOnHand = useMemo(() => {
+    let salesCash = 0;
+    sales.forEach(s => {
+      if (s.paymentMethod === 'Cash') {
+        salesCash += s.grossSale;
+      }
+    });
+
+    let expensesCash = 0;
+    expenses.forEach(e => {
+      if (e.paymentMethod === 'Cash') {
+        expensesCash += e.amount;
+      }
+    });
+
+    const cashAdjust = settings.cashAdjust || 0;
+    const startingCash = settings.startingCash ?? 0;
+
+    return startingCash + salesCash - expensesCash + cashAdjust;
   }, [sales, expenses, settings]);
 
   // Handle bank/cash adjustments (manual transfers)
@@ -1020,15 +1085,70 @@ export function AppContent() {
     }
   }, [currentTab, userId, navigate, location.pathname]);
 
+  const PageSkeleton = () => (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col space-y-6">
+      <div className="max-w-7xl mx-auto w-full space-y-6 animate-pulse">
+        <div className="flex justify-between items-center">
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-1/4"></div>
+          <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg w-24"></div>
+        </div>
+        <div className="h-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="h-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6"></div>
+          <div className="h-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   function RequireAuth({ children }: { children: React.ReactNode }) {
-    if (dbLoading) {
+    if (dbLoading && !isLoaded) {
       return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 animate-pulse">
-              {settings.language === 'am' ? 'ከሱፓቤዝ ዳታቤዝ ጋር በመገናኘት ላይ...' : 'Connecting to Supabase Database...'}
-            </p>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col lg:flex-row">
+          {/* Skeleton Sidebar */}
+          <div className="w-full lg:w-64 bg-white dark:bg-slate-900 border-b lg:border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col space-y-6">
+            <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse w-3/4"></div>
+            <div className="space-y-4 pt-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-10 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+          {/* Skeleton Body */}
+          <div className="flex-1 p-6 sm:p-8 space-y-6">
+            {/* Header row */}
+            <div className="flex justify-between items-center">
+              <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse w-1/4"></div>
+              <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse w-32"></div>
+            </div>
+            {/* Stats Cards Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-28 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-3">
+                  <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse w-1/2"></div>
+                  <div className="h-8 bg-slate-200 dark:bg-slate-800 rounded-lg animate-pulse w-3/4"></div>
+                </div>
+              ))}
+            </div>
+            {/* Main content grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 h-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
+                <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse w-1/3 mb-6"></div>
+                <div className="h-64 bg-slate-200/50 dark:bg-slate-800/50 rounded-xl animate-pulse"></div>
+              </div>
+              <div className="h-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+                <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse w-1/2 mb-2"></div>
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-slate-200 dark:bg-slate-800 rounded-full animate-pulse"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse w-3/4"></div>
+                      <div className="h-3 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -1045,19 +1165,15 @@ export function AppContent() {
           onRefresh={async () => {
             setDbLoading(true);
             try {
-              const [pRes, sRes, eRes, rRes, payRes, tRes, mRes, gRes, setRes] = await Promise.all([
-                supabase.from('products').select('*'),
-                supabase.from('sales').select('*'),
-                supabase.from('expenses').select('*'),
-                supabase.from('receivables').select('*'),
-                supabase.from('payables').select('*'),
-                supabase.from('tasks').select('*'),
-                supabase.from('memos').select('*'),
-                supabase.from('goals').select('*'),
-                supabase.from('business_settings').select('*').maybeSingle()
+              const [sRes, eRes, rRes, payRes, setRes] = await Promise.all([
+                supabase.from('sales').select('id, items, customerName, paymentMethod, date, notes, grossSale, cost, profit').range(0, 100),
+                supabase.from('expenses').select('id, name, category, amount, paymentMethod, date, description').range(0, 100),
+                supabase.from('receivables').select('id, customer, phone, amount, dueDate, status').range(0, 100),
+                supabase.from('payables').select('id, supplier, amount, dueDate, status').range(0, 100),
+                supabase.from('business_settings').select('userId, businessName, address, phone, email, currency, language, theme, bankAdjust, cashAdjust, ownerName, preferCBE, preferTelebirr, preferEBirr, preferSinqee, preferOther, startingCBE, startingTelebirr, startingEBirr, startingSinqee, startingOther, startingCash').maybeSingle()
               ]);
 
-              const errors = [pRes.error, sRes.error, eRes.error, rRes.error, payRes.error, tRes.error, mRes.error, gRes.error, setRes.error].filter(Boolean);
+              const errors = [sRes.error, eRes.error, rRes.error, payRes.error, setRes.error].filter(Boolean);
               const missingTableError = errors.find(e => 
                 e.code === '42P01' || 
                 e.message?.includes('relation') || 
@@ -1072,28 +1188,18 @@ export function AppContent() {
                 setDbError(null);
                 if (!setRes.data) {
                   setSetupRequired(true);
-                  setProducts([]);
                   setSales([]);
                   setExpenses([]);
                   setReceivables([]);
                   setPayables([]);
-                  setTasks([]);
-                  setMemos([]);
-                  setGoals([]);
                 } else {
                   setSetupRequired(false);
-                  setProducts(pRes.data || []);
                   setSales(sRes.data || []);
                   setExpenses(eRes.data || []);
                   setReceivables(rRes.data || []);
                   setPayables(payRes.data || []);
-                  setTasks(tRes.data || []);
-                  setMemos(mRes.data || []);
-                  setGoals(gRes.data || []);
                   const dbSettings = setRes.data || {};
-                  const storageKey = userId 
-                    ? `habesha_tracker_preferred_accounts_${userId}` 
-                    : 'habesha_tracker_preferred_accounts_default';
+                  const storageKey = `habesha_tracker_preferred_accounts_${userId}`;
                   const localPrefsRaw = localStorage.getItem(storageKey);
                   let mergedSettings = { ...dbSettings };
                   if (localPrefsRaw) {
@@ -1392,7 +1498,8 @@ export function AppContent() {
 
   return (
     <>
-      <Routes>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
         {/* Public SaaS Pages */}
         <Route path="/" element={
           <LandingPage 
@@ -1534,6 +1641,7 @@ export function AppContent() {
         {/* Fallback Catch All */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+    </Suspense>
 
       {/* Floating sliding notification custom Toasts drawer */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">

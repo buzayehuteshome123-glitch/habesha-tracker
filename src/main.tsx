@@ -264,3 +264,48 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 );
+
+// --- LIGHTWEIGHT PERFORMANCE MONITORING ---
+if (typeof window !== 'undefined') {
+  const logPerf = (name: string, value: number) => {
+    console.log(`[📊 Performance] ${name}: ${value.toFixed(2)}ms`);
+  };
+
+  try {
+    // 1. Observe First Contentful Paint (FCP)
+    const fcpObserver = new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntriesByName('first-contentful-paint');
+      if (entries.length > 0) {
+        logPerf('First Contentful Paint (FCP)', entries[0].startTime);
+        fcpObserver.disconnect();
+      }
+    });
+    fcpObserver.observe({ type: 'paint', buffered: true });
+
+    // 2. Observe Largest Contentful Paint (LCP)
+    const lcpObserver = new PerformanceObserver((entryList) => {
+      const entries = entryList.getEntries();
+      if (entries.length > 0) {
+        const lastEntry = entries[entries.length - 1];
+        logPerf('Largest Contentful Paint (LCP)', lastEntry.startTime);
+      }
+    });
+    lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+
+    // 3. Measure DOM Interactive and Load Event Times
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        try {
+          const [navigation] = performance.getEntriesByType('navigation') as any[];
+          if (navigation) {
+            logPerf('DOM Interactive (DOMReady)', navigation.domInteractive);
+            logPerf('Load Event End (Full Page Load)', navigation.loadEventEnd);
+          }
+        } catch (e) {}
+      }, 0);
+    });
+  } catch (e) {
+    console.warn('[Performance Monitoring] Web Vitals PerformanceObserver is not fully supported in this browser.', e);
+  }
+}
+

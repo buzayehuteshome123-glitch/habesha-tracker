@@ -156,3 +156,14 @@ CREATE POLICY "Users can manage their own goals" ON goals
 
 CREATE POLICY "Users can manage their own business_settings" ON business_settings 
     FOR ALL TO authenticated USING (auth.uid() = "userId") WITH CHECK (auth.uid() = "userId");
+
+-- 12. Create indexes for performance optimization
+CREATE INDEX IF NOT EXISTS idx_products_userId ON products("userId");
+CREATE INDEX IF NOT EXISTS idx_sales_userId ON sales("userId");
+CREATE INDEX IF NOT EXISTS idx_expenses_userId ON expenses("userId");
+CREATE INDEX IF NOT EXISTS idx_receivables_userId ON receivables("userId");
+CREATE INDEX IF NOT EXISTS idx_payables_userId ON payables("userId");
+CREATE INDEX IF NOT EXISTS idx_tasks_userId ON tasks("userId");
+CREATE INDEX IF NOT EXISTS idx_memos_userId ON memos("userId");
+CREATE INDEX IF NOT EXISTS idx_goals_userId ON goals("userId");
+
