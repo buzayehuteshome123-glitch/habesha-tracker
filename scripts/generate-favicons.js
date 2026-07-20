@@ -2,14 +2,16 @@ import fs from 'fs';
 import path from 'path';
 import sharp from 'sharp';
 
-const SVG_PATH = path.resolve('public/favicon.svg');
+const SOURCE_PATH = fs.existsSync(path.resolve('src/assets/images/habesha_tracker_logo_1783619785685.jpg'))
+  ? path.resolve('src/assets/images/habesha_tracker_logo_1783619785685.jpg')
+  : path.resolve('public/favicon.svg');
 const PUBLIC_DIR = path.resolve('public');
 
 async function main() {
-  console.log('🚀 Starting high-fidelity favicon generation from SVG...');
+  console.log(`🚀 Starting high-fidelity favicon generation from source: ${SOURCE_PATH}...`);
   
-  if (!fs.existsSync(SVG_PATH)) {
-    console.error(`Error: SVG file not found at ${SVG_PATH}`);
+  if (!fs.existsSync(SOURCE_PATH)) {
+    console.error(`Error: Source file not found at ${SOURCE_PATH}`);
     process.exit(1);
   }
 
@@ -30,7 +32,7 @@ async function main() {
     const destPath = path.join(PUBLIC_DIR, target.file);
     console.log(`Rendering ${target.size}x${target.size} to ${target.file}...`);
     
-    const buffer = await sharp(SVG_PATH)
+    const buffer = await sharp(SOURCE_PATH)
       .resize(target.size, target.size)
       .png({ compressionLevel: 9 })
       .toBuffer();
