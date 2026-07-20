@@ -36,11 +36,8 @@ export default defineConfig(() => {
               if (id.includes('lucide-react')) {
                 return 'vendor-icons';
               }
-              // Standard core packages
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-                return 'vendor-core';
-              }
-              return 'vendor-others';
+              // Combine all other node_modules into vendor-core to prevent circular chunk dependencies
+              return 'vendor-core';
             }
           }
         }
