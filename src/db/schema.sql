@@ -115,6 +115,17 @@ CREATE TABLE IF NOT EXISTS business_settings (
     "ownerName" TEXT,
     "bankAdjust" NUMERIC NOT NULL DEFAULT 0.00,
     "cashAdjust" NUMERIC NOT NULL DEFAULT 0.00,
+    "preferCBE" BOOLEAN DEFAULT TRUE,
+    "preferTelebirr" BOOLEAN DEFAULT TRUE,
+    "preferEBirr" BOOLEAN DEFAULT TRUE,
+    "preferSinqee" BOOLEAN DEFAULT TRUE,
+    "preferOther" BOOLEAN DEFAULT TRUE,
+    "startingCBE" NUMERIC DEFAULT 0.00,
+    "startingTelebirr" NUMERIC DEFAULT 0.00,
+    "startingEBirr" NUMERIC DEFAULT 0.00,
+    "startingSinqee" NUMERIC DEFAULT 0.00,
+    "startingOther" NUMERIC DEFAULT 0.00,
+    "startingCash" NUMERIC DEFAULT 0.00,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
 
@@ -166,4 +177,17 @@ CREATE INDEX IF NOT EXISTS idx_payables_userId ON payables("userId");
 CREATE INDEX IF NOT EXISTS idx_tasks_userId ON tasks("userId");
 CREATE INDEX IF NOT EXISTS idx_memos_userId ON memos("userId");
 CREATE INDEX IF NOT EXISTS idx_goals_userId ON goals("userId");
+
+-- 13. Schema Migrations (Safe column additions for existing business_settings tables)
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "preferCBE" BOOLEAN DEFAULT TRUE;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "preferTelebirr" BOOLEAN DEFAULT TRUE;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "preferEBirr" BOOLEAN DEFAULT TRUE;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "preferSinqee" BOOLEAN DEFAULT TRUE;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "preferOther" BOOLEAN DEFAULT TRUE;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "startingCBE" NUMERIC DEFAULT 0.00;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "startingTelebirr" NUMERIC DEFAULT 0.00;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "startingEBirr" NUMERIC DEFAULT 0.00;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "startingSinqee" NUMERIC DEFAULT 0.00;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "startingOther" NUMERIC DEFAULT 0.00;
+ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS "startingCash" NUMERIC DEFAULT 0.00;
 

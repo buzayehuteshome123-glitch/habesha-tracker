@@ -109,7 +109,7 @@ export default function ProfileSetup({ userId, userEmail, onComplete, onLogout }
       }));
 
       // Upsert business settings for this user in Supabase
-      const { error } = await supabase.from('business_settings').upsert({
+      const fullPayload = {
         userId,
         businessName: newSettings.businessName,
         ownerName: newSettings.ownerName,
@@ -120,11 +120,42 @@ export default function ProfileSetup({ userId, userEmail, onComplete, onLogout }
         language: newSettings.language,
         theme: newSettings.theme,
         bankAdjust: newSettings.bankAdjust,
-        cashAdjust: newSettings.cashAdjust
-      });
+        cashAdjust: newSettings.cashAdjust,
+        preferCBE,
+        preferTelebirr,
+        preferEBirr,
+        preferSinqee,
+        preferOther,
+        startingCBE: cbeAmt,
+        startingTelebirr: telebirrAmt,
+        startingEBirr: ebirrAmt,
+        startingSinqee: sinqeeAmt,
+        startingOther: otherAmt,
+        startingCash: cashAmt
+      };
+
+      const { error } = await supabase.from('business_settings').upsert(fullPayload);
 
       if (error) {
-        throw error;
+        if (error.message?.includes('column') || error.message?.includes('does not exist') || error.code === '42703') {
+          // Fallback to core columns if database schema lacks preference columns
+          const { error: fallbackError } = await supabase.from('business_settings').upsert({
+            userId,
+            businessName: newSettings.businessName,
+            ownerName: newSettings.ownerName,
+            phone: newSettings.phone,
+            address: newSettings.address,
+            currency: newSettings.currency,
+            email: newSettings.email,
+            language: newSettings.language,
+            theme: newSettings.theme,
+            bankAdjust: newSettings.bankAdjust,
+            cashAdjust: newSettings.cashAdjust
+          });
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
       }
 
       onComplete(newSettings);

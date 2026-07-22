@@ -142,6 +142,17 @@ CREATE TABLE IF NOT EXISTS business_settings (
     "ownerName" TEXT,
     "bankAdjust" NUMERIC NOT NULL DEFAULT 0.00,
     "cashAdjust" NUMERIC NOT NULL DEFAULT 0.00,
+    "preferCBE" BOOLEAN DEFAULT TRUE,
+    "preferTelebirr" BOOLEAN DEFAULT TRUE,
+    "preferEBirr" BOOLEAN DEFAULT TRUE,
+    "preferSinqee" BOOLEAN DEFAULT TRUE,
+    "preferOther" BOOLEAN DEFAULT TRUE,
+    "startingCBE" NUMERIC DEFAULT 0.00,
+    "startingTelebirr" NUMERIC DEFAULT 0.00,
+    "startingEBirr" NUMERIC DEFAULT 0.00,
+    "startingSinqee" NUMERIC DEFAULT 0.00,
+    "startingOther" NUMERIC DEFAULT 0.00,
+    "startingCash" NUMERIC DEFAULT 0.00,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()) NOT NULL
 );
 

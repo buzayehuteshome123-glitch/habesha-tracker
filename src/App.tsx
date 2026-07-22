@@ -431,7 +431,7 @@ export function AppContent() {
           supabase.from('expenses').select('id, name, category, amount, paymentMethod, date, description').eq('userId', userId).order('date', { ascending: false }).range(0, 100),
           supabase.from('receivables').select('id, customer, phone, amount, dueDate, status').eq('userId', userId).range(0, 100),
           supabase.from('payables').select('id, supplier, amount, dueDate, status').eq('userId', userId).range(0, 100),
-          supabase.from('business_settings').select('userId, businessName, address, phone, email, currency, language, theme, bankAdjust, cashAdjust, ownerName, preferCBE, preferTelebirr, preferEBirr, preferSinqee, preferOther, startingCBE, startingTelebirr, startingEBirr, startingSinqee, startingOther, startingCash').eq('userId', userId).maybeSingle()
+          supabase.from('business_settings').select('*').eq('userId', userId).maybeSingle()
         ]);
 
         const errors = [sRes.error, eRes.error, rRes.error, payRes.error, setRes.error].filter(Boolean);
@@ -440,7 +440,7 @@ export function AppContent() {
           e.message?.includes('relation') || 
           e.message?.includes('schema cache') || 
           e.message?.includes('Could not find the table') ||
-          e.message?.includes('does not exist')
+          (e.message?.includes('does not exist') && !e.message?.includes('column'))
         );
 
         if (missingTableError) {
@@ -951,9 +951,10 @@ export function AppContent() {
     if (!isLoaded || !userId || offlineMode) return;
     const sync = async () => {
       try {
-        await supabase.from('business_settings').upsert({
+        const fullPayload: any = {
           userId,
           businessName: settings.businessName,
+          ownerName: settings.ownerName,
           address: settings.address,
           phone: settings.phone,
           email: settings.email,
@@ -961,8 +962,38 @@ export function AppContent() {
           language: settings.language,
           theme: settings.theme,
           bankAdjust: settings.bankAdjust || 0,
-          cashAdjust: settings.cashAdjust || 0
-        });
+          cashAdjust: settings.cashAdjust || 0,
+          preferCBE: settings.preferCBE,
+          preferTelebirr: settings.preferTelebirr,
+          preferEBirr: settings.preferEBirr,
+          preferSinqee: settings.preferSinqee,
+          preferOther: settings.preferOther,
+          startingCBE: settings.startingCBE,
+          startingTelebirr: settings.startingTelebirr,
+          startingEBirr: settings.startingEBirr,
+          startingSinqee: settings.startingSinqee,
+          startingOther: settings.startingOther,
+          startingCash: settings.startingCash
+        };
+
+        const { error } = await supabase.from('business_settings').upsert(fullPayload);
+
+        if (error && (error.message?.includes('column') || error.message?.includes('does not exist') || error.code === '42703')) {
+          // Fallback to core columns if database table does not yet have preference columns
+          await supabase.from('business_settings').upsert({
+            userId,
+            businessName: settings.businessName,
+            ownerName: settings.ownerName,
+            address: settings.address,
+            phone: settings.phone,
+            email: settings.email,
+            currency: settings.currency,
+            language: settings.language,
+            theme: settings.theme,
+            bankAdjust: settings.bankAdjust || 0,
+            cashAdjust: settings.cashAdjust || 0
+          });
+        }
       } catch (err) {
         console.error('Failed to sync settings:', err);
       }
@@ -1170,7 +1201,7 @@ export function AppContent() {
                 supabase.from('expenses').select('id, name, category, amount, paymentMethod, date, description').range(0, 100),
                 supabase.from('receivables').select('id, customer, phone, amount, dueDate, status').range(0, 100),
                 supabase.from('payables').select('id, supplier, amount, dueDate, status').range(0, 100),
-                supabase.from('business_settings').select('userId, businessName, address, phone, email, currency, language, theme, bankAdjust, cashAdjust, ownerName, preferCBE, preferTelebirr, preferEBirr, preferSinqee, preferOther, startingCBE, startingTelebirr, startingEBirr, startingSinqee, startingOther, startingCash').maybeSingle()
+                supabase.from('business_settings').select('*').maybeSingle()
               ]);
 
               const errors = [sRes.error, eRes.error, rRes.error, payRes.error, setRes.error].filter(Boolean);
@@ -1179,7 +1210,7 @@ export function AppContent() {
                 e.message?.includes('relation') || 
                 e.message?.includes('schema cache') || 
                 e.message?.includes('Could not find the table') ||
-                e.message?.includes('does not exist')
+                (e.message?.includes('does not exist') && !e.message?.includes('column'))
               );
 
               if (missingTableError) {
