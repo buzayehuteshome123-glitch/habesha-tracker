@@ -11,7 +11,13 @@ import {
   Moon, 
   Download, 
   Upload, 
-  LogOut
+  LogOut,
+  Trash2,
+  RotateCcw,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle,
+  Database
 } from 'lucide-react';
 import { BusinessSettings } from '../types';
 import { TRANSLATIONS } from '../sampleData';
@@ -24,6 +30,15 @@ interface SettingsProps {
   onRestore: (dataStr: string) => void;
   addToast: (text: string, type: 'info' | 'warning' | 'success') => void;
   onLogout?: () => void;
+  onEraseAllData?: (loadSample?: boolean) => Promise<void> | void;
+  onLoadSampleData?: () => Promise<void> | void;
+  itemCounts?: {
+    products: number;
+    sales: number;
+    expenses: number;
+    receivables: number;
+    payables: number;
+  };
 }
 
 export default function Settings({
@@ -33,11 +48,19 @@ export default function Settings({
   onRestore,
   addToast,
   onLogout,
+  onEraseAllData,
+  onLoadSampleData,
+  itemCounts = { products: 0, sales: 0, expenses: 0, receivables: 0, payables: 0 },
 }: SettingsProps) {
   const t = TRANSLATIONS[settings.language];
   const isAmharic = settings.language === 'am';
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Erase confirmation dialog states
+  const [isEraseModalOpen, setIsEraseModalOpen] = useState(false);
+  const [eraseMode, setEraseMode] = useState<'clean' | 'sample'>('clean');
+  const [isErasing, setIsErasing] = useState(false);
 
   // Form Fields mapped to settings state
   const [businessName, setBusinessName] = useState(settings.businessName);
@@ -522,14 +545,68 @@ export default function Settings({
             </div>
           </div>
 
+          {/* Data Reset & Erase Information (Danger Zone) */}
+          <div className="bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-900/40 rounded-2xl p-6 shadow-xs flex flex-col justify-between space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 font-sans uppercase tracking-wider border-l-3 border-amber-500 pl-3 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                  {isAmharic ? 'የመረጃ ዳግም ማስጀመሪያ (Data Reset)' : 'Reset & Start Fresh'}
+                </h3>
+                <span className="text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-mono px-2 py-0.5 rounded-full font-bold">
+                  {itemCounts.products} items
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-sans mb-3">
+                {isAmharic 
+                  ? 'ሁሉንም የተመዘገቡ ምርቶች፣ ሽያጮች፣ ወጪዎች እና የብድር መረጃዎች አጥፍተው በአዲስ ንጹህ ዳሽቦርድ መጀመር ይችላሉ።' 
+                  : 'Erase all user data (products, sales, expenses, loans, notes) to start completely blank and fresh, or reload Ethiopian demo data.'}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2.5">
+              {/* Erase & Start Blank Button */}
+              {onEraseAllData && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEraseMode('clean');
+                    setIsEraseModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer"
+                  id="btn-settings-erase-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{isAmharic ? 'ሁሉንም መረጃ አጥፋና አዲስ ጀምር (Erase All Data)' : 'Erase All Information & Start Fresh'}</span>
+                </button>
+              )}
+
+              {/* Reload Demo Sample Data Button */}
+              {onEraseAllData && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEraseMode('sample');
+                    setIsEraseModalOpen(true);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                  id="btn-settings-reload-sample"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{isAmharic ? 'የሙከራ ናሙና መረጃ ጫን (Load Demo Sample)' : 'Load Ethiopian Sample Demo Data'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Sign Out Card */}
           {onLogout && (
-            <div className="bg-white dark:bg-slate-900 border border-rose-100 dark:border-rose-950/40 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-xs flex flex-col justify-between">
               <div>
-                <h3 className="text-sm font-bold text-rose-600 dark:text-rose-400 font-sans uppercase tracking-wider mb-2 border-l-3 border-rose-500 pl-3">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 font-sans uppercase tracking-wider mb-2 border-l-3 border-slate-400 pl-3">
                   {isAmharic ? 'የመለያ መውጫ' : 'Account Sign Out'}
                 </h3>
-                <p className="text-[11px] text-slate-400 leading-relaxed font-sans mb-5">
+                <p className="text-[11px] text-slate-400 leading-relaxed font-sans mb-4">
                   {isAmharic 
                     ? 'ከዚህ መለያ በደህንነት ለመውጣት እና ወደ መግቢያ ገጽ ለመመለስ ከታች ያለውን ቁልፍ ይጫኑ።' 
                     : 'Safely sign out of your current manager profile session and return to the main portal.'}
@@ -537,7 +614,7 @@ export default function Settings({
               </div>
               <button
                 onClick={onLogout}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 text-xs font-bold rounded-xl border border-rose-200/50 dark:border-rose-900/40 transition cursor-pointer"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
                 id="btn-settings-logout"
               >
                 <LogOut className="w-4 h-4" />
@@ -548,6 +625,125 @@ export default function Settings({
         </div>
 
       </div>
+
+      {/* Dedicated Safety Double Confirmation Dialog for Erasing All Data */}
+      {isEraseModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 space-y-4">
+            
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-2xl ${eraseMode === 'clean' ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-600' : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600'}`}>
+                {eraseMode === 'clean' ? <Trash2 className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {eraseMode === 'clean'
+                    ? (isAmharic ? 'ሁሉንም መረጃ ማጥፋት ይፈልጋሉ?' : 'Erase All Information & Start Fresh?')
+                    : (isAmharic ? 'የናሙና መረጃዎችን እንደገና መጫን ይፈልጋሉ?' : 'Load Sample Ethiopian Demo Data?')
+                  }
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  {eraseMode === 'clean' 
+                    ? (isAmharic ? 'ይህ ተግባር ወደ ኋላ አይመለስም!' : 'This action is irreversible.')
+                    : (isAmharic ? 'አሁን ያሉትን መረጃዎች በናሙና መረጃ ይተካል' : 'Replaces current workspace with demo records.')
+                  }
+                </p>
+              </div>
+            </div>
+
+            {eraseMode === 'clean' ? (
+              <div className="bg-rose-50 dark:bg-rose-950/20 border border-rose-200/60 dark:border-rose-900/40 rounded-xl p-3.5 text-xs text-rose-800 dark:text-rose-300 space-y-2">
+                <p className="font-semibold">
+                  {isAmharic 
+                    ? 'የሚከተሉት መረጃዎች በሙሉ ይሰረዛሉ፡' 
+                    : 'The following records will be permanently erased:'}
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-[11px] font-medium">
+                  <div className="bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40">
+                    📦 {isAmharic ? 'ምርቶች' : 'Products'}: <strong className="font-bold">{itemCounts.products}</strong>
+                  </div>
+                  <div className="bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40">
+                    🛒 {isAmharic ? 'ሽያጮች' : 'Sales'}: <strong className="font-bold">{itemCounts.sales}</strong>
+                  </div>
+                  <div className="bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40">
+                    📉 {isAmharic ? 'ወጪዎች' : 'Expenses'}: <strong className="font-bold">{itemCounts.expenses}</strong>
+                  </div>
+                  <div className="bg-white/80 dark:bg-slate-900/80 p-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40">
+                    🤝 {isAmharic ? 'ብድሮች' : 'Loans'}: <strong className="font-bold">{itemCounts.receivables + itemCounts.payables}</strong>
+                  </div>
+                </div>
+                <p className="text-[10px] text-rose-600 dark:text-rose-400">
+                  {isAmharic 
+                    ? 'ሁሉም የባንክና የጥሬ ገንዘብ ሒሳቦች ወደ 0 ይመለሳሉ።' 
+                    : 'All bank adjustments and starting cash balances will be reset to 0.'}
+                </p>
+              </div>
+            ) : (
+              <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/40 rounded-xl p-3.5 text-xs text-emerald-800 dark:text-emerald-300 space-y-1">
+                <p className="font-semibold">
+                  {isAmharic 
+                    ? 'የናሙና መረጃዎች የሚከተሉትን ያካትታሉ፡' 
+                    : 'Sample records include:'}
+                </p>
+                <p className="text-[11px]">
+                  {isAmharic 
+                    ? '• ነጭ ጤፍ፣ ቀይ ጤፍ፣ የሐረርና ሲዳማ ቡና፣ የምግብ ዘይት ክምችት፣ የሽያጭና የወጪ መዝገቦች።' 
+                    : '• White Teff, Red Teff, Harar/Sidamo Coffee, Cooking oil, active sales & expense logs.'}
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={isErasing}
+                onClick={() => setIsEraseModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+              >
+                {isAmharic ? 'ሰርዝ (Cancel)' : 'Cancel'}
+              </button>
+              <button
+                type="button"
+                disabled={isErasing}
+                onClick={async () => {
+                  if (!onEraseAllData) return;
+                  setIsErasing(true);
+                  try {
+                    await onEraseAllData(eraseMode === 'sample');
+                    setIsEraseModalOpen(false);
+                  } finally {
+                    setIsErasing(false);
+                  }
+                }}
+                className={`flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-lg transition cursor-pointer ${
+                  eraseMode === 'clean' 
+                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/20' 
+                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                }`}
+                id="btn-confirm-erase-data"
+              >
+                {isErasing ? (
+                  <>
+                    <RotateCcw className="w-4 h-4 animate-spin" />
+                    <span>{isAmharic ? 'በማጥፋት ላይ...' : 'Erasing...'}</span>
+                  </>
+                ) : (
+                  <>
+                    {eraseMode === 'clean' ? <Trash2 className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+                    <span>
+                      {eraseMode === 'clean' 
+                        ? (isAmharic ? 'አዎ፣ ሁሉንም አጥፋ (Yes, Erase All)' : 'Yes, Erase Everything') 
+                        : (isAmharic ? 'አዎ፣ ናሙና ጫን (Load Demo)' : 'Yes, Load Demo')
+                      }
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

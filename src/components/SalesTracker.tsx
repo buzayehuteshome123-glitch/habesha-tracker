@@ -24,6 +24,7 @@ import * as XLSX from 'xlsx';
 import { Product, Sale, SaleItem, BusinessSettings, Receivable } from '../types';
 import { TRANSLATIONS } from '../sampleData';
 import { tgHaptics } from '../utils/telegram';
+import { generateDailySalesPDF } from '../utils/pdfExport';
 
 interface SalesTrackerProps {
   products: Product[];
@@ -68,6 +69,10 @@ export default function SalesTracker({
   
   // Basket list for the active new sale
   const [basket, setBasket] = useState<{ productId: string; quantity: number; sellingPrice: number }[]>([]);
+
+  // Daily Sales PDF Export Modal State
+  const [isDailyPdfModalOpen, setIsDailyPdfModalOpen] = useState(false);
+  const [dailyPdfDate, setDailyPdfDate] = useState(new Date().toISOString().slice(0, 10));
 
   // Filters state
   const [filterSearch, setFilterSearch] = useState('');
@@ -419,6 +424,59 @@ export default function SalesTracker({
     addToast('POS thermal receipt generated successfully.', 'success');
   };
 
+  // Export Daily Sales PDF
+  const handleExportDailySalesPdf = (dateToExport?: string) => {
+    const targetDate = dateToExport || dailyPdfDate || new Date().toISOString().slice(0, 10);
+    try {
+      const fileName = generateDailySalesPDF({
+        dateStr: targetDate,
+        sales,
+        products,
+        settings
+      });
+      addToast(
+        isAmharic 
+          ? `የ ${targetDate} የቀን ሽያጭ ሪፖርት (PDF) ወርዷል!` 
+          : `Daily Sales PDF report (${targetDate}) downloaded successfully!`, 
+        'success'
+      );
+      setIsDailyPdfModalOpen(false);
+    } catch (err: any) {
+      console.error('Error generating daily sales pdf:', err);
+      addToast(isAmharic ? 'PDF በማውረድ ላይ ስህተት አጋጥሟል' : 'Failed to generate Daily Sales PDF.', 'warning');
+    }
+  };
+
+  // Export Filtered Sales Ledger PDF
+  const handleExportFilteredLedgerPdf = () => {
+    try {
+      const isSingleDay = filterStartDate && filterStartDate === filterEndDate;
+      if (isSingleDay) {
+        handleExportDailySalesPdf(filterStartDate);
+        return;
+      }
+
+      // Generate PDF for filtered range
+      const fileName = generateDailySalesPDF({
+        dateStr: filterStartDate || new Date().toISOString().slice(0, 10),
+        sales: filteredSales,
+        products,
+        settings,
+        customTitle: filterStartDate && filterEndDate 
+          ? `SALES PERFORMANCE LEDGER (${filterStartDate} to ${filterEndDate})`
+          : 'SALES PERFORMANCE & AUDIT REPORT'
+      });
+
+      addToast(
+        isAmharic ? 'የተጣራ የሽያጭ ሪፖርት (PDF) ወርዷል!' : 'Sales ledger PDF exported successfully!',
+        'success'
+      );
+    } catch (err) {
+      console.error('Error exporting filtered ledger pdf:', err);
+      addToast('Failed to export sales PDF.', 'warning');
+    }
+  };
+
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       
@@ -434,15 +492,26 @@ export default function SalesTracker({
           </p>
         </div>
 
-        {/* Action button */}
-        <button
-          onClick={openSaleModal}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-600/10 transition self-start sm:self-auto"
-          id="btn-sales-add"
-        >
-          <Plus className="w-4 h-4" />
-          {t.recordNewSale}
-        </button>
+        {/* Action buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            onClick={() => setIsDailyPdfModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs transition cursor-pointer"
+            id="btn-sales-daily-pdf-top"
+          >
+            <FileText className="w-4 h-4 text-emerald-500" />
+            <span>{isAmharic ? 'የቀን ሽያጭ PDF' : 'Daily Sales PDF'}</span>
+          </button>
+
+          <button
+            onClick={openSaleModal}
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-lg shadow-emerald-600/10 transition cursor-pointer"
+            id="btn-sales-add"
+          >
+            <Plus className="w-4 h-4" />
+            {t.recordNewSale}
+          </button>
+        </div>
       </div>
 
       {/* Filter Row */}
@@ -577,10 +646,27 @@ export default function SalesTracker({
           <h3 className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider">
             {t.salesTable}
           </h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center flex-wrap">
+            <button
+              onClick={() => setIsDailyPdfModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200 dark:border-emerald-800/80 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 rounded-lg transition cursor-pointer"
+              id="btn-sales-export-daily-pdf"
+            >
+              <FileText className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              {isAmharic ? 'የቀን ሽያጭ PDF' : 'Daily Sales PDF'}
+            </button>
+            <button
+              onClick={handleExportFilteredLedgerPdf}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg transition cursor-pointer"
+              id="btn-sales-export-ledger-pdf"
+              title="Export currently filtered sales as PDF ledger"
+            >
+              <Download className="w-3 h-3 text-indigo-500" />
+              {isAmharic ? 'የተጣራ PDF' : 'Ledger PDF'}
+            </button>
             <button
               onClick={exportCsv}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg transition cursor-pointer"
               id="btn-sales-export-csv"
             >
               <Download className="w-3 h-3" />
@@ -588,7 +674,7 @@ export default function SalesTracker({
             </button>
             <button
               onClick={exportExcel}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-600 dark:text-slate-300 rounded-lg transition cursor-pointer"
               id="btn-sales-export-excel"
             >
               <FileSpreadsheet className="w-3 h-3" />
@@ -955,14 +1041,14 @@ export default function SalesTracker({
                 <button
                   type="button"
                   onClick={() => setIsSaleModalOpen(false)}
-                  className="px-4 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 font-semibold rounded-xl transition"
+                  className="px-4 py-2 text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 font-semibold rounded-xl transition cursor-pointer"
                 >
                   {t.cancel}
                 </button>
                 <button
                   type="submit"
                   disabled={products.length === 0}
-                  className="px-5 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-5 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-md transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   id="btn-sales-modal-submit"
                 >
                   Confirm Checkout
@@ -973,6 +1059,165 @@ export default function SalesTracker({
           </div>
         </div>
       )}
+
+      {/* Daily Sales PDF Modal */}
+      {isDailyPdfModalOpen && (() => {
+        const selectedDaySales = sales.filter(s => {
+          const sDate = s.date.includes('T') ? s.date.split('T')[0] : s.date.slice(0, 10);
+          return sDate === dailyPdfDate;
+        });
+
+        const dayGross = selectedDaySales.reduce((acc, curr) => acc + curr.grossSale, 0);
+        const dayProfit = selectedDaySales.reduce((acc, curr) => acc + curr.profit, 0);
+        const dayCash = selectedDaySales.filter(s => s.paymentMethod === 'Cash').reduce((acc, curr) => acc + curr.grossSale, 0);
+        const dayDigital = dayGross - dayCash;
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const yesterdayDate = new Date();
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        const yesterdayStr = yesterdayDate.toISOString().slice(0, 10);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+              
+              {/* Modal Header */}
+              <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-emerald-500/10 to-transparent">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-800 dark:text-white">
+                      {isAmharic ? 'የቀን ሽያጭ ሪፖርት (PDF)' : 'Daily Sales PDF Export'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isAmharic ? 'ቀን ይምረጡና ዝርዝር ሪፖርት ያውርዱ' : 'Select date and download executive audit PDF'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsDailyPdfModalOpen(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-5">
+                
+                {/* Date Selection */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    {isAmharic ? 'የሪፖርት ቀን ይምረጡ' : 'Select Report Date'}
+                  </label>
+                  <input
+                    type="date"
+                    value={dailyPdfDate}
+                    onChange={(e) => setDailyPdfDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white font-medium focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 focus:outline-hidden"
+                    id="input-daily-pdf-date"
+                  />
+                  
+                  {/* Quick date presets */}
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setDailyPdfDate(todayStr)}
+                      className={`px-3 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
+                        dailyPdfDate === todayStr 
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      {isAmharic ? 'የዛሬ' : 'Today'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDailyPdfDate(yesterdayStr)}
+                      className={`px-3 py-1 text-xs rounded-lg font-medium transition cursor-pointer ${
+                        dailyPdfDate === yesterdayStr 
+                          ? 'bg-emerald-600 text-white' 
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                      }`}
+                    >
+                      {isAmharic ? 'የትላንት' : 'Yesterday'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Day Summary Preview Card */}
+                <div className="bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-500 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+                    <span>{dailyPdfDate} Audit Summary</span>
+                    <span className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md font-mono text-[11px]">
+                      {selectedDaySales.length} {selectedDaySales.length === 1 ? 'sale' : 'sales'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Gross Sales</span>
+                      <span className="text-sm font-bold text-slate-800 dark:text-white font-mono">
+                        {dayGross.toLocaleString()} Br
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Estimated Profit</span>
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                        {dayProfit.toLocaleString()} Br
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Physical Cash</span>
+                      <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 font-mono">
+                        {dayCash.toLocaleString()} Br
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Digital / Bank</span>
+                      <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 font-mono">
+                        {dayDigital.toLocaleString()} Br
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* PDF Features Info */}
+                <div className="text-[11px] text-slate-400 bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-800/60 flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>
+                    Includes executive KPI cards, CBE/Telebirr channel settlement breakdown, itemized customer transactions, and cashier sign-off blocks.
+                  </span>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsDailyPdfModalOpen(false)}
+                  className="px-4 py-2 text-xs bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                >
+                  {t.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportDailySalesPdf(dailyPdfDate)}
+                  className="flex items-center gap-2 px-5 py-2 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/20 transition cursor-pointer"
+                  id="btn-confirm-download-daily-pdf"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>{isAmharic ? 'PDF አውርድ' : 'Download Daily PDF'}</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

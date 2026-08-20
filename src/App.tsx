@@ -67,6 +67,29 @@ interface Toast {
   type: 'info' | 'warning' | 'success';
 }
 
+const DEFAULT_SETTINGS: BusinessSettings = {
+  businessName: 'My Habesha Business',
+  address: 'Addis Ababa, Ethiopia',
+  phone: '',
+  email: '',
+  currency: 'ETB',
+  language: 'en',
+  theme: 'dark',
+  bankAdjust: 0,
+  cashAdjust: 0,
+  preferCBE: true,
+  preferTelebirr: true,
+  preferEBirr: true,
+  preferSinqee: false,
+  preferOther: false,
+  startingCBE: 0,
+  startingTelebirr: 0,
+  startingEBirr: 0,
+  startingSinqee: 0,
+  startingOther: 0,
+  startingCash: 0
+};
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -92,28 +115,7 @@ export function AppContent() {
         return JSON.parse(cached);
       }
     } catch (e) {}
-    return {
-      businessName: 'My Habesha Business',
-      address: 'Addis Ababa, Ethiopia',
-      phone: '',
-      email: '',
-      currency: 'ETB',
-      language: 'en',
-      theme: 'dark',
-      bankAdjust: 0,
-      cashAdjust: 0,
-      preferCBE: true,
-      preferTelebirr: true,
-      preferEBirr: true,
-      preferSinqee: false,
-      preferOther: false,
-      startingCBE: 0,
-      startingTelebirr: 0,
-      startingEBirr: 0,
-      startingSinqee: 0,
-      startingOther: 0,
-      startingCash: 0
-    };
+    return DEFAULT_SETTINGS;
   });
 
   // Track database loading and user identification
@@ -125,6 +127,26 @@ export function AppContent() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [offlineMode, setOfflineMode] = useState<boolean>(false);
   const [secondaryLoaded, setSecondaryLoaded] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+
+  // Helper to purge all local in-memory records to prevent cross-account data bleed
+  const clearAllLocalState = useCallback(() => {
+    setProducts([]);
+    setSales([]);
+    setExpenses([]);
+    setReceivables([]);
+    setPayables([]);
+    setTasks([]);
+    setMemos([]);
+    setGoals([]);
+    setNotifications([]);
+    setSetupRequired(false);
+    setIsLoaded(false);
+    setSecondaryLoaded(false);
+    setDbLoading(false);
+    setDbError(null);
+    setSettings(DEFAULT_SETTINGS);
+  }, []);
 
   // Sync settings changes to local cache for instant reload capability
   useEffect(() => {
@@ -135,6 +157,25 @@ export function AppContent() {
       }
     } catch (e) {}
   }, [settings, userId]);
+
+  // Offline mode local persistence per-user
+  useEffect(() => {
+    if (!userId || !offlineMode || !isLoaded || isResetting) return;
+    try {
+      const store = {
+        products,
+        sales,
+        expenses,
+        receivables,
+        payables,
+        tasks,
+        memos,
+        goals,
+        settings
+      };
+      localStorage.setItem(`ht_offline_store_${userId}`, JSON.stringify(store));
+    } catch (e) {}
+  }, [products, sales, expenses, receivables, payables, tasks, memos, goals, settings, userId, offlineMode, isLoaded, isResetting]);
 
   // Notifications bell array
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -203,6 +244,149 @@ export function AppContent() {
     }
   };
 
+  // Dedicated Logout Handler that completely purges state and caches
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    clearAllLocalState();
+    setUserId(null);
+    setUserEmail('');
+    setOfflineMode(false);
+    setAuthScreen('landing');
+    addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
+    navigate('/');
+  };
+
+  // Erase All User Data / Start New Clean Slate Handler
+  const handleEraseAllUserData = async (loadDemoSample = false) => {
+    if (!userId) return;
+    
+    setIsResetting(true);
+    try {
+      if (!offlineMode) {
+        // 1. Delete all user data from Supabase
+        await Promise.all([
+          supabase.from('products').delete().eq('userId', userId),
+          supabase.from('sales').delete().eq('userId', userId),
+          supabase.from('expenses').delete().eq('userId', userId),
+          supabase.from('receivables').delete().eq('userId', userId),
+          supabase.from('payables').delete().eq('userId', userId),
+          supabase.from('tasks').delete().eq('userId', userId),
+          supabase.from('memos').delete().eq('userId', userId),
+          supabase.from('goals').delete().eq('userId', userId),
+        ]);
+      }
+
+      // 2. Clear all local storage caches for this user
+      localStorage.removeItem(`ht_offline_store_${userId}`);
+      localStorage.removeItem(`ht_cached_settings_${userId}`);
+      localStorage.removeItem(`habesha_tracker_preferred_accounts_${userId}`);
+
+      if (loadDemoSample) {
+        // Reload sample demo grains & coffee data
+        const demoProducts = INITIAL_PRODUCTS.map(p => ({ ...p, id: `prod-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoSales = INITIAL_SALES.map(s => ({ ...s, id: `sale-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoExpenses = INITIAL_EXPENSES.map(e => ({ ...e, id: `exp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoReceivables = INITIAL_RECEIVABLES.map(r => ({ ...r, id: `rec-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoPayables = INITIAL_PAYABLES.map(p => ({ ...p, id: `pay-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoTasks = INITIAL_TASKS.map(t => ({ ...t, id: `task-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoMemos = INITIAL_MEMOS.map(m => ({ ...m, id: `memo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+        const demoGoals = INITIAL_GOALS.map(g => ({ ...g, id: `goal-${Date.now()}-${Math.random().toString(36).substr(2, 5)}` }));
+
+        setProducts(demoProducts);
+        setSales(demoSales);
+        setExpenses(demoExpenses);
+        setReceivables(demoReceivables);
+        setPayables(demoPayables);
+        setTasks(demoTasks);
+        setMemos(demoMemos);
+        setGoals(demoGoals);
+
+        if (!offlineMode) {
+          await Promise.all([
+            supabase.from('products').upsert(demoProducts.map(p => ({ ...p, userId }))),
+            supabase.from('sales').upsert(demoSales.map(s => ({ ...s, userId }))),
+            supabase.from('expenses').upsert(demoExpenses.map(e => ({ ...e, userId }))),
+            supabase.from('receivables').upsert(demoReceivables.map(r => ({ ...r, userId }))),
+            supabase.from('payables').upsert(demoPayables.map(p => ({ ...p, userId }))),
+            supabase.from('tasks').upsert(demoTasks.map(t => ({ ...t, userId }))),
+            supabase.from('memos').upsert(demoMemos.map(m => ({ ...m, userId }))),
+            supabase.from('goals').upsert(demoGoals.map(g => ({ ...g, userId }))),
+          ]);
+        }
+
+        addToast(
+          settings.language === 'am' 
+            ? 'የናሙና መረጃዎች በተሳካ ሁኔታ ተጭነዋል!' 
+            : 'Ethiopian demo sample data loaded successfully!', 
+          'success'
+        );
+      } else {
+        // Complete Wipe / Clean Slate
+        setProducts([]);
+        setSales([]);
+        setExpenses([]);
+        setReceivables([]);
+        setPayables([]);
+        setTasks([]);
+        setMemos([]);
+        setGoals([]);
+
+        const cleanSettings: BusinessSettings = {
+          ...settings,
+          businessName: settings.businessName || 'My Habesha Business',
+          bankAdjust: 0,
+          cashAdjust: 0,
+          startingCBE: 0,
+          startingTelebirr: 0,
+          startingEBirr: 0,
+          startingSinqee: 0,
+          startingOther: 0,
+          startingCash: 0,
+        };
+        setSettings(cleanSettings);
+
+        if (!offlineMode) {
+          await supabase.from('business_settings').upsert({
+            userId,
+            businessName: cleanSettings.businessName,
+            ownerName: cleanSettings.ownerName || '',
+            address: cleanSettings.address || '',
+            phone: cleanSettings.phone || '',
+            email: cleanSettings.email || '',
+            currency: cleanSettings.currency || 'ETB',
+            language: cleanSettings.language || 'en',
+            theme: cleanSettings.theme || 'dark',
+            bankAdjust: 0,
+            cashAdjust: 0,
+            startingCBE: 0,
+            startingTelebirr: 0,
+            startingEBirr: 0,
+            startingSinqee: 0,
+            startingOther: 0,
+            startingCash: 0,
+          });
+        }
+
+        addToast(
+          settings.language === 'am' 
+            ? 'ሁሉም መረጃዎች በሙሉ ተሰርዘዋል! አዲስ ንጹህ ጅምር ዝግጁ ነው።' 
+            : 'All user data erased successfully! Your workspace is fresh and clean.', 
+          'success'
+        );
+      }
+    } catch (err: any) {
+      console.error('Error erasing user data:', err);
+      addToast(
+        settings.language === 'am' ? 'መረጃዎችን በማጥፋት ላይ ስህተት አጋጥሟል' : 'Error erasing data. Please try again.',
+        'warning'
+      );
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   // Supabase Auth Session listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -220,10 +404,9 @@ export function AppContent() {
         setAuthScreen('app');
         setOfflineMode(false);
       } else {
+        clearAllLocalState();
         setUserId(null);
         setUserEmail('');
-        setSetupRequired(false);
-        setSecondaryLoaded(false);
         setAuthScreen(current => {
           if (current === 'signin' || current === 'signup' || current === 'reset-password') {
             return current;
@@ -249,11 +432,10 @@ export function AppContent() {
           return current;
         });
       } else {
+        clearAllLocalState();
         setUserId(null);
         setUserEmail('');
-        setSetupRequired(false);
         setOfflineMode(false);
-        setSecondaryLoaded(false);
         setAuthScreen(current => {
           if (current === 'app') {
             return 'landing';
@@ -264,7 +446,7 @@ export function AppContent() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [clearAllLocalState]);
 
   // Telegram Mini App (TMA) Lifecycle & Hardware BackButton integration
   useEffect(() => {
@@ -464,6 +646,33 @@ export function AppContent() {
 
     const loadCoreUserData = async () => {
       if (offlineMode) {
+        try {
+          const savedStoreRaw = localStorage.getItem(`ht_offline_store_${userId}`);
+          if (savedStoreRaw) {
+            const parsed = JSON.parse(savedStoreRaw);
+            if (parsed.products) setProducts(parsed.products);
+            if (parsed.sales) setSales(parsed.sales);
+            if (parsed.expenses) setExpenses(parsed.expenses);
+            if (parsed.receivables) setReceivables(parsed.receivables);
+            if (parsed.payables) setPayables(parsed.payables);
+            if (parsed.tasks) setTasks(parsed.tasks);
+            if (parsed.memos) setMemos(parsed.memos);
+            if (parsed.goals) setGoals(parsed.goals);
+            if (parsed.settings) setSettings(parsed.settings);
+          } else {
+            // Fresh offline user
+            setProducts([]);
+            setSales([]);
+            setExpenses([]);
+            setReceivables([]);
+            setPayables([]);
+            setTasks([]);
+            setMemos([]);
+            setGoals([]);
+          }
+        } catch (e) {
+          console.error('Error loading offline store:', e);
+        }
         setDbLoading(false);
         setIsLoaded(true);
         setSetupRequired(false);
@@ -512,12 +721,16 @@ export function AppContent() {
         }
 
         if (!setRes.data) {
-          // New user setup required - do not seed any demo data
+          // New user setup required - start completely blank
           setSetupRequired(true);
+          setProducts([]);
           setSales([]);
           setExpenses([]);
           setReceivables([]);
           setPayables([]);
+          setTasks([]);
+          setMemos([]);
+          setGoals([]);
         } else {
           setSetupRequired(false);
           setSales(sRes.data || []);
@@ -725,7 +938,7 @@ export function AppContent() {
 
   // Synchronize lists to Supabase
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('products').select('id').eq('userId', userId);
@@ -778,10 +991,10 @@ export function AppContent() {
         ]);
       }
     }
-  }, [products]);
+  }, [products, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('sales').select('id').eq('userId', userId);
@@ -814,10 +1027,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [sales]);
+  }, [sales, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('expenses').select('id').eq('userId', userId);
@@ -848,10 +1061,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [expenses]);
+  }, [expenses, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('receivables').select('id').eq('userId', userId);
@@ -881,10 +1094,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [receivables]);
+  }, [receivables, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('payables').select('id').eq('userId', userId);
@@ -913,10 +1126,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [payables]);
+  }, [payables, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('tasks').select('id').eq('userId', userId);
@@ -943,10 +1156,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [tasks]);
+  }, [tasks, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('memos').select('id').eq('userId', userId);
@@ -975,10 +1188,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [memos]);
+  }, [memos, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('goals').select('id').eq('userId', userId);
@@ -1005,10 +1218,10 @@ export function AppContent() {
       }
     };
     sync();
-  }, [goals]);
+  }, [goals, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode) return;
+    if (!isLoaded || !userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const fullPayload: any = {
@@ -1329,12 +1542,7 @@ export function AppContent() {
             setSetupRequired(false);
             addToast(newSettings.language === 'am' ? 'መገለጫዎ በተሳካ ሁኔታ ተዋቅሯል!' : 'Profile setup completed successfully!', 'success');
           }}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            setAuthScreen('landing');
-            setSetupRequired(false);
-            navigate('/');
-          }}
+          onLogout={handleLogout}
         />
       );
     }
@@ -1356,12 +1564,7 @@ export function AppContent() {
           setSettings={setSettings}
           onOpenSpreadShare={() => setIsSpreadShareOpen(true)}
           onOpenTelegramGuide={() => setIsTelegramGuideOpen(true)}
-          onLogout={async () => {
-            await supabase.auth.signOut();
-            addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
-            setAuthScreen('landing');
-            navigate('/');
-          }}
+          onLogout={handleLogout}
         />
           
         {/* Scrollable workspace next to fixed sidebar */}
@@ -1474,11 +1677,14 @@ export function AppContent() {
                 onBackup={handleBackup}
                 onRestore={handleRestore}
                 addToast={addToast}
-                onLogout={async () => {
-                  await supabase.auth.signOut();
-                  setAuthScreen('landing');
-                  addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
-                  navigate('/');
+                onLogout={handleLogout}
+                onEraseAllData={handleEraseAllUserData}
+                itemCounts={{
+                  products: products.length,
+                  sales: sales.length,
+                  expenses: expenses.length,
+                  receivables: receivables.length,
+                  payables: payables.length
                 }}
               />
             )}

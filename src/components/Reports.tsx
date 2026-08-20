@@ -18,6 +18,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Product, Sale, Expense, Receivable, Payable, BusinessSettings } from '../types';
 import { TRANSLATIONS } from '../sampleData';
+import { generateDailySalesPDF } from '../utils/pdfExport';
 
 interface ReportsProps {
   products: Product[];
@@ -192,6 +193,27 @@ export default function Reports({
   };
 
   const handleExportPdf = () => {
+    if (selectedReport === 'daily_sales_report') {
+      try {
+        generateDailySalesPDF({
+          dateStr: reportDate,
+          sales,
+          products,
+          settings
+        });
+        addToast(
+          isAmharic 
+            ? `የ ${reportDate} የቀን ሽያጭ ሪፖርት (PDF) ወርዷል!` 
+            : `Daily Sales PDF report (${reportDate}) downloaded successfully!`, 
+          'success'
+        );
+      } catch (e) {
+        console.error('Error generating daily sales report PDF:', e);
+        addToast('Failed to generate PDF', 'warning');
+      }
+      return;
+    }
+
     const doc = new jsPDF();
     const rows = getSelectedDataRows();
     if (rows.length === 0) {

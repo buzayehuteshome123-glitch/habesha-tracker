@@ -12,7 +12,8 @@ import {
   FileSpreadsheet,
   Download,
   AlertCircle,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -30,6 +31,7 @@ import jsPDF from 'jspdf';
 import { Product, Sale, Expense, Receivable, Payable, BusinessSettings } from '../types';
 import { TRANSLATIONS } from '../sampleData';
 import { BANK_LOGOS } from '../bankLogos';
+import { generateDailySalesPDF } from '../utils/pdfExport';
 
 interface DashboardProps {
   products: Product[];
@@ -302,6 +304,16 @@ export default function Dashboard({
     doc.text('Authorized by Habesha Tracker ERP Cloud System.', 15, 270);
 
     doc.save('weekly-sales-report.pdf');
+  };
+
+  const downloadTodaySalesReportPdf = () => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    generateDailySalesPDF({
+      dateStr: todayStr,
+      sales,
+      products,
+      settings
+    });
   };
 
   return (
@@ -661,18 +673,30 @@ export default function Dashboard({
         
         {/* Weekly Sales Chart */}
         <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-6 shadow-xs flex flex-col h-[380px]">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <h3 className="text-sm font-bold text-slate-800 dark:text-white font-sans uppercase tracking-wider border-l-3 border-emerald-500 pl-3">
               {t.weeklyPerformance}
             </h3>
-            <button
-              onClick={downloadWeeklyReportPdf}
-              className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 transition"
-              id="btn-weekly-pdf"
-            >
-              <Download className="w-3.5 h-3.5" />
-              PDF Report
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadTodaySalesReportPdf}
+                className="px-2.5 py-1 text-xs bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 font-semibold flex items-center gap-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/80 transition cursor-pointer"
+                id="btn-today-sales-pdf"
+                title="Download Today's Sales PDF Audit"
+              >
+                <FileText className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{isAmharic ? 'የዛሬ ሽያጭ PDF' : "Today's Sales PDF"}</span>
+              </button>
+
+              <button
+                onClick={downloadWeeklyReportPdf}
+                className="text-xs text-slate-600 dark:text-slate-300 hover:text-emerald-600 font-semibold flex items-center gap-1 transition px-2 py-1 cursor-pointer"
+                id="btn-weekly-pdf"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{isAmharic ? 'ሳምንታዊ PDF' : 'Weekly PDF'}</span>
+              </button>
+            </div>
           </div>
           <div className="flex-1 min-h-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
