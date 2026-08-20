@@ -24,6 +24,16 @@ const FAQPage = React.lazy(() => import('./components/FAQPage'));
 const PrivacyPolicyPage = React.lazy(() => import('./components/PrivacyPolicyPage'));
 const TermsOfServicePage = React.lazy(() => import('./components/TermsOfServicePage'));
 const RefundPolicyPage = React.lazy(() => import('./components/RefundPolicyPage'));
+const SpreadShareModal = React.lazy(() => import('./components/SpreadShareModal'));
+const TelegramBotGuideModal = React.lazy(() => import('./components/TelegramBotGuideModal'));
+
+import { 
+  initTelegramMiniApp, 
+  isTelegramMiniApp, 
+  getTelegramUser, 
+  getTelegramWebApp, 
+  tgHaptics 
+} from './utils/telegram';
 
 
 import { 
@@ -141,6 +151,8 @@ export function AppContent() {
 
   // Navigation routing tab
   const [currentTab, setCurrentTab] = useState<any>('dashboard');
+  const [isSpreadShareOpen, setIsSpreadShareOpen] = useState(false);
+  const [isTelegramGuideOpen, setIsTelegramGuideOpen] = useState(false);
   const [authScreen, setAuthScreen] = useState<'landing' | 'signin' | 'signup' | 'app' | 'reset-password'>(() => {
     try {
       if (
@@ -253,6 +265,54 @@ export function AppContent() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Telegram Mini App (TMA) Lifecycle & Hardware BackButton integration
+  useEffect(() => {
+    const { isTMA, user: tgUser } = initTelegramMiniApp();
+    if (isTMA) {
+      // Auto-enter app if not authenticated yet so Telegram users have zero-friction instant access
+      setOfflineMode(true);
+      setUserId(tgUser ? `tg_${tgUser.id}` : 'tg_user');
+      setAuthScreen('app');
+      
+      // Personalize business profile with Telegram user info if default
+      if (tgUser?.first_name) {
+        setSettings(prev => ({
+          ...prev,
+          ownerName: prev.ownerName || `${tgUser.first_name}${tgUser.last_name ? ' ' + tgUser.last_name : ''}`,
+          language: tgUser.language_code === 'am' ? 'am' : prev.language,
+        }));
+      }
+    }
+  }, []);
+
+  // Telegram native BackButton state sync
+  useEffect(() => {
+    const tg = getTelegramWebApp();
+    if (!tg || !tg.BackButton) return;
+
+    const isSubView = (authScreen === 'app' && currentTab !== 'dashboard') || isSpreadShareOpen || isTelegramGuideOpen;
+    
+    if (isSubView) {
+      tg.BackButton.show();
+      const handleBack = () => {
+        tgHaptics.impact('light');
+        if (isTelegramGuideOpen) {
+          setIsTelegramGuideOpen(false);
+        } else if (isSpreadShareOpen) {
+          setIsSpreadShareOpen(false);
+        } else if (currentTab !== 'dashboard') {
+          setCurrentTab('dashboard');
+        }
+      };
+      tg.BackButton.onClick(handleBack);
+      return () => {
+        tg.BackButton.offClick(handleBack);
+      };
+    } else {
+      tg.BackButton.hide();
+    }
+  }, [authScreen, currentTab, isSpreadShareOpen, isTelegramGuideOpen]);
 
   // Dynamic SEO Metatags & Indexability Control based on Auth Screen & App State
   useEffect(() => {
@@ -1294,6 +1354,8 @@ export function AppContent() {
           clearNotifications={clearNotifications}
           settings={settings}
           setSettings={setSettings}
+          onOpenSpreadShare={() => setIsSpreadShareOpen(true)}
+          onOpenTelegramGuide={() => setIsTelegramGuideOpen(true)}
           onLogout={async () => {
             await supabase.auth.signOut();
             addToast(settings.language === 'am' ? 'በሰላም ወጥተዋል!' : 'Logged out successfully!', 'info');
@@ -1401,6 +1463,7 @@ export function AppContent() {
                 payables={payables}
                 settings={settings}
                 addToast={addToast}
+                onOpenSpreadShare={() => setIsSpreadShareOpen(true)}
               />
             )}
 
@@ -1523,6 +1586,27 @@ export function AppContent() {
             </form>
           </div>
         )}
+
+        {/* Spread & Share Suite Modal */}
+        <SpreadShareModal 
+          isOpen={isSpreadShareOpen}
+          onClose={() => setIsSpreadShareOpen(false)}
+          products={products}
+          sales={sales}
+          expenses={expenses}
+          receivables={receivables}
+          payables={payables}
+          settings={settings}
+          addToast={addToast}
+        />
+
+        {/* Telegram Mini App Bot Guide Modal */}
+        <TelegramBotGuideModal 
+          isOpen={isTelegramGuideOpen}
+          onClose={() => setIsTelegramGuideOpen(false)}
+          language={settings.language}
+          addToast={addToast}
+        />
       </div>
     );
   }
@@ -1673,6 +1757,14 @@ export function AppContent() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
+
+      {/* Global Modals */}
+      <TelegramBotGuideModal 
+        isOpen={isTelegramGuideOpen}
+        onClose={() => setIsTelegramGuideOpen(false)}
+        language={settings.language}
+        addToast={addToast}
+      />
 
       {/* Floating sliding notification custom Toasts drawer */}
       <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none">

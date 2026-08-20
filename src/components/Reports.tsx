@@ -11,7 +11,8 @@ import {
   DollarSign, 
   Users, 
   Building2,
-  FileText
+  FileText,
+  Share2
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
@@ -26,6 +27,7 @@ interface ReportsProps {
   payables: Payable[];
   settings: BusinessSettings;
   addToast: (text: string, type: 'info' | 'warning' | 'success') => void;
+  onOpenSpreadShare?: () => void;
 }
 
 type ReportType = 
@@ -44,6 +46,7 @@ export default function Reports({
   payables,
   settings,
   addToast,
+  onOpenSpreadShare,
 }: ReportsProps) {
   const t = TRANSLATIONS[settings.language];
   const isAmharic = settings.language === 'am';
@@ -599,7 +602,19 @@ export default function Reports({
               </p>
             </div>
 
-            <div className="flex gap-2 w-full sm:w-auto shrink-0">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto shrink-0">
+              {/* Spread & Share Button */}
+              {onOpenSpreadShare && (
+                <button
+                  onClick={onOpenSpreadShare}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs transition cursor-pointer"
+                  id="btn-report-spread-share"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>{isAmharic ? 'አጋራ (Spread & Share)' : 'Spread & Share'}</span>
+                </button>
+              )}
+
               {/* PDF */}
               <button
                 onClick={handleExportPdf}

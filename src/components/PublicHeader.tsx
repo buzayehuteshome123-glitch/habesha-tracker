@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Globe, ArrowRight, Menu, X, Sun, Moon } from 'lucide-react';
+import { Globe, ArrowRight, Menu, X, Sun, Moon, Send } from 'lucide-react';
 import { BusinessSettings } from '../types';
 
 interface PublicHeaderProps {
@@ -83,6 +83,15 @@ export default function PublicHeader({ settings, setSettings }: PublicHeaderProp
               </Link>
             );
           })}
+          <a
+            href="https://t.me/BotFather"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-bold text-[#0088cc] hover:text-[#0077b5] flex items-center gap-1 transition"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Telegram App</span>
+          </a>
         </nav>
 
         {/* Quick SaaS Control Toolbar */}

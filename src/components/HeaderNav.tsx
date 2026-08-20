@@ -14,6 +14,8 @@ import {
   Languages, 
   Sun, 
   Moon,
+  Share2,
+  Send,
   Building2,
   LogOut
 } from 'lucide-react';
@@ -28,6 +30,8 @@ interface HeaderNavProps {
   settings: BusinessSettings;
   setSettings: (settings: BusinessSettings) => void;
   onLogout?: () => void;
+  onOpenSpreadShare?: () => void;
+  onOpenTelegramGuide?: () => void;
 }
 
 export default function HeaderNav({
@@ -38,6 +42,8 @@ export default function HeaderNav({
   settings,
   setSettings,
   onLogout,
+  onOpenSpreadShare,
+  onOpenTelegramGuide,
 }: HeaderNavProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -106,6 +112,28 @@ export default function HeaderNav({
         </div>
 
         <div className="flex items-center gap-1">
+          {onOpenTelegramGuide && (
+            <button
+              onClick={onOpenTelegramGuide}
+              className="p-2 text-[#0088cc] hover:bg-[#0088cc]/10 rounded-lg transition"
+              title="Telegram Mini App"
+              id="btn-mobile-telegram-tma"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          )}
+
+          {onOpenSpreadShare && (
+            <button
+              onClick={onOpenSpreadShare}
+              className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-lg transition"
+              title="Spread & Share"
+              id="btn-mobile-spread-share"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          )}
+
           <button
             onClick={toggleLanguage}
             className="p-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
@@ -204,7 +232,35 @@ export default function HeaderNav({
         </nav>
 
         {/* Sidebar Footer User Card */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40 space-y-3">
+        <div className="p-4 border-t border-slate-800 bg-slate-950/40 space-y-2">
+          {onOpenTelegramGuide && (
+            <button
+              onClick={() => {
+                onOpenTelegramGuide();
+                setIsSidebarOpen(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#0088cc]/15 hover:bg-[#0088cc]/25 text-[#0088cc] border border-[#0088cc]/30 text-xs font-bold transition shadow-xs"
+              id="btn-sidebar-telegram-tma"
+            >
+              <Send className="w-4 h-4" />
+              <span>{settings.language === 'am' ? 'የቴሌግራም ሚኒ አፕ (TMA)' : 'Telegram Mini App'}</span>
+            </button>
+          )}
+
+          {onOpenSpreadShare && (
+            <button
+              onClick={() => {
+                onOpenSpreadShare();
+                setIsSidebarOpen(false);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition shadow-xs"
+              id="btn-sidebar-spread-share"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>{settings.language === 'am' ? 'አጋራ እና አስፋፋ (Spread & Share)' : 'Spread & Share Hub'}</span>
+            </button>
+          )}
+
           <div className="flex items-center gap-3 p-2 bg-slate-800/50 rounded-xl border border-slate-700/30">
             <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center text-emerald-400 font-bold border border-slate-700">
               <Building2 className="w-4 h-4" />
@@ -244,7 +300,31 @@ export default function HeaderNav({
         </div>
 
         {/* Global Toolbar */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          {/* Telegram TMA Guide Button */}
+          {onOpenTelegramGuide && (
+            <button
+              onClick={onOpenTelegramGuide}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#0088cc]/10 hover:bg-[#0088cc]/20 text-[#0088cc] rounded-lg border border-[#0088cc]/30 transition shadow-xs"
+              id="btn-desktop-telegram-tma"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>Telegram TMA</span>
+            </button>
+          )}
+
+          {/* Spread & Share Button */}
+          {onOpenSpreadShare && (
+            <button
+              onClick={onOpenSpreadShare}
+              className="flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-500/30 transition shadow-xs"
+              id="btn-desktop-spread-share"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              <span>{settings.language === 'am' ? 'አጋራ (Spread & Share)' : 'Spread & Share'}</span>
+            </button>
+          )}
+
           {/* Language Toggle Button */}
           <button
             onClick={toggleLanguage}

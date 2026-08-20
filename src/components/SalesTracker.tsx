@@ -23,6 +23,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Product, Sale, SaleItem, BusinessSettings, Receivable } from '../types';
 import { TRANSLATIONS } from '../sampleData';
+import { tgHaptics } from '../utils/telegram';
 
 interface SalesTrackerProps {
   products: Product[];
@@ -235,6 +236,7 @@ export default function SalesTracker({
     }
 
     setIsSaleModalOpen(false);
+    tgHaptics.notification('success');
 
     addToast(
       isAmharic 
