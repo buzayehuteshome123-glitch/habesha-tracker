@@ -79,18 +79,30 @@ if (isPlaceholder) {
   class MockQueryBuilder {
     private tableName: string;
     private filters: Array<(item: any) => boolean> = [];
+    private orderConfig: { column: string; ascending: boolean } | null = null;
+    private rangeConfig: { from: number; to: number } | null = null;
+    private limitCount: number | null = null;
 
     constructor(tableName: string) {
       this.tableName = tableName;
     }
 
     private getData(): any[] {
-      const raw = localStorage.getItem(`${KEYS.DB_PREFIX}${this.tableName}`);
-      return raw ? JSON.parse(raw) : [];
+      try {
+        const raw = localStorage.getItem(`${KEYS.DB_PREFIX}${this.tableName}`);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error(`Error reading ${this.tableName} from localStorage:`, e);
+        return [];
+      }
     }
 
     private saveData(data: any[]) {
-      localStorage.setItem(`${KEYS.DB_PREFIX}${this.tableName}`, JSON.stringify(data));
+      try {
+        localStorage.setItem(`${KEYS.DB_PREFIX}${this.tableName}`, JSON.stringify(data));
+      } catch (e) {
+        console.error(`Error saving ${this.tableName} to localStorage:`, e);
+      }
     }
 
     select(fields: string = '*') {
@@ -102,37 +114,115 @@ if (isPlaceholder) {
       return this;
     }
 
-    in(field: string, values: any[]) {
-      this.filters.push(item => values.includes(item[field]));
+    neq(field: string, value: any) {
+      this.filters.push(item => item[field] !== value);
       return this;
     }
 
-    async maybeSingle() {
+    in(field: string, values: any[]) {
+      this.filters.push(item => values && values.includes(item[field]));
+      return this;
+    }
+
+    is(field: string, value: any) {
+      this.filters.push(item => item[field] === value);
+      return this;
+    }
+
+    order(column: string, options: { ascending?: boolean } = {}) {
+      this.orderConfig = {
+        column,
+        ascending: options.ascending !== false
+      };
+      return this;
+    }
+
+    range(from: number, to: number) {
+      this.rangeConfig = { from, to };
+      return this;
+    }
+
+    limit(count: number) {
+      this.limitCount = count;
+      return this;
+    }
+
+    private applyQueries(): any[] {
       let data = this.getData();
       for (const filter of this.filters) {
         data = data.filter(filter);
       }
+      if (this.orderConfig) {
+        const { column, ascending } = this.orderConfig;
+        data.sort((a, b) => {
+          const valA = a[column];
+          const valB = b[column];
+          if (valA < valB) return ascending ? -1 : 1;
+          if (valA > valB) return ascending ? 1 : -1;
+          return 0;
+        });
+      }
+      if (this.rangeConfig) {
+        data = data.slice(this.rangeConfig.from, this.rangeConfig.to + 1);
+      } else if (this.limitCount !== null) {
+        data = data.slice(0, this.limitCount);
+      }
+      return data;
+    }
+
+    async single() {
+      const data = this.applyQueries();
+      if (data.length === 0) {
+        return { data: null, error: { message: 'Row not found', code: 'PGRST116' } };
+      }
+      return { data: data[0], error: null };
+    }
+
+    async maybeSingle() {
+      const data = this.applyQueries();
       return { data: data.length > 0 ? data[0] : null, error: null };
     }
 
     // Support direct await on query builder instance
-    async then(onfulfilled?: (value: any) => any) {
-      let data = this.getData();
-      for (const filter of this.filters) {
-        data = data.filter(filter);
-      }
+    async then(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) {
+      const data = this.applyQueries();
       const result = { data, error: null };
       return onfulfilled ? onfulfilled(result) : result;
     }
 
-    async upsert(items: any | any[]) {
+    async insert(items: any | any[]) {
+      return this.upsert(items);
+    }
+
+    async update(values: any) {
+      let data = this.getData();
+      let updatedCount = 0;
+      data = data.map(item => {
+        let matches = true;
+        for (const filter of this.filters) {
+          if (!filter(item)) {
+            matches = false;
+            break;
+          }
+        }
+        if (matches) {
+          updatedCount++;
+          return { ...item, ...values };
+        }
+        return item;
+      });
+      this.saveData(data);
+      return { data: values, error: null };
+    }
+
+    async upsert(items: any | any[], options?: any) {
       const arrayItems = Array.isArray(items) ? items : [items];
       let data = this.getData();
       
       for (const item of arrayItems) {
         // Match existing row by ID, or unique settings per user
         const idx = data.findIndex(d => 
-          d.id === item.id || 
+          (item.id && d.id === item.id) || 
           (this.tableName === 'business_settings' && item.userId && d.userId === item.userId)
         );
         if (idx > -1) {
@@ -146,12 +236,12 @@ if (isPlaceholder) {
       return { data: items, error: null };
     }
 
-    async delete() {
+    delete() {
       const self = this;
-      return {
+      const deleteBuilder: any = {
         in(field: string, values: any[]) {
           let data = self.getData();
-          data = data.filter(item => !values.includes(item[field]));
+          data = data.filter(item => !values || !values.includes(item[field]));
           self.saveData(data);
           return Promise.resolve({ data: null, error: null });
         },
@@ -160,8 +250,25 @@ if (isPlaceholder) {
           data = data.filter(item => item[field] !== value);
           self.saveData(data);
           return Promise.resolve({ data: null, error: null });
+        },
+        then(onfulfilled?: (value: any) => any) {
+          let data = self.getData();
+          if (self.filters.length > 0) {
+            data = data.filter(item => {
+              for (const filter of self.filters) {
+                if (filter(item)) return false; // delete matching
+              }
+              return true;
+            });
+          } else {
+            data = [];
+          }
+          self.saveData(data);
+          const result = { data: null, error: null };
+          return onfulfilled ? onfulfilled(result) : result;
         }
       };
+      return deleteBuilder;
     }
   }
 

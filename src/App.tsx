@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
 import HeaderNav from './components/HeaderNav';
 import { supabase } from './lib/supabase';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -128,9 +128,11 @@ export function AppContent() {
   const [offlineMode, setOfflineMode] = useState<boolean>(false);
   const [secondaryLoaded, setSecondaryLoaded] = useState<boolean>(false);
   const [isResetting, setIsResetting] = useState<boolean>(false);
+  const dataLoadedUserIdRef = useRef<string | null>(null);
 
   // Helper to purge all local in-memory records to prevent cross-account data bleed
   const clearAllLocalState = useCallback(() => {
+    dataLoadedUserIdRef.current = null;
     setProducts([]);
     setSales([]);
     setExpenses([]);
@@ -158,10 +160,11 @@ export function AppContent() {
     } catch (e) {}
   }, [settings, userId]);
 
-  // Offline mode local persistence per-user
+  // Robust local store cache per-user for instant load and offline resilience
   useEffect(() => {
-    if (!userId || !offlineMode || !isLoaded || isResetting) return;
+    if (!isLoaded || isResetting || (userId && dataLoadedUserIdRef.current !== userId)) return;
     try {
+      const activeKey = userId ? `ht_offline_store_${userId}` : 'ht_offline_store_guest';
       const store = {
         products,
         sales,
@@ -173,9 +176,9 @@ export function AppContent() {
         goals,
         settings
       };
-      localStorage.setItem(`ht_offline_store_${userId}`, JSON.stringify(store));
+      localStorage.setItem(activeKey, JSON.stringify(store));
     } catch (e) {}
-  }, [products, sales, expenses, receivables, payables, tasks, memos, goals, settings, userId, offlineMode, isLoaded, isResetting]);
+  }, [products, sales, expenses, receivables, payables, tasks, memos, goals, settings, userId, isLoaded, isResetting]);
 
   // Notifications bell array
   const [notifications, setNotifications] = useState<AppNotification[]>(() => {
@@ -637,74 +640,72 @@ export function AppContent() {
     };
   }, [userId, settings.language, userEmail]);
 
-  // Fetch core dashboard data when authenticated user is set (SWR + Column Selective + Pagination Optimized)
+  // Fetch all user data when authenticated user is set (SWR + Atomic Load)
   useEffect(() => {
     if (!userId) {
+      dataLoadedUserIdRef.current = null;
       setIsLoaded(false);
       return;
     }
 
-    const loadCoreUserData = async () => {
-      if (offlineMode) {
-        try {
-          const savedStoreRaw = localStorage.getItem(`ht_offline_store_${userId}`);
-          if (savedStoreRaw) {
-            const parsed = JSON.parse(savedStoreRaw);
-            if (parsed.products) setProducts(parsed.products);
-            if (parsed.sales) setSales(parsed.sales);
-            if (parsed.expenses) setExpenses(parsed.expenses);
-            if (parsed.receivables) setReceivables(parsed.receivables);
-            if (parsed.payables) setPayables(parsed.payables);
-            if (parsed.tasks) setTasks(parsed.tasks);
-            if (parsed.memos) setMemos(parsed.memos);
-            if (parsed.goals) setGoals(parsed.goals);
-            if (parsed.settings) setSettings(parsed.settings);
-          } else {
-            // Fresh offline user
-            setProducts([]);
-            setSales([]);
-            setExpenses([]);
-            setReceivables([]);
-            setPayables([]);
-            setTasks([]);
-            setMemos([]);
-            setGoals([]);
-          }
-        } catch (e) {
-          console.error('Error loading offline store:', e);
+    const loadUserData = async () => {
+      // 1. Check local offline cache first to populate immediately
+      try {
+        const activeKey = `ht_offline_store_${userId}`;
+        const savedStoreRaw = localStorage.getItem(activeKey);
+        if (savedStoreRaw) {
+          const parsed = JSON.parse(savedStoreRaw);
+          if (Array.isArray(parsed.products) && parsed.products.length > 0) setProducts(parsed.products);
+          if (Array.isArray(parsed.sales) && parsed.sales.length > 0) setSales(parsed.sales);
+          if (Array.isArray(parsed.expenses) && parsed.expenses.length > 0) setExpenses(parsed.expenses);
+          if (Array.isArray(parsed.receivables) && parsed.receivables.length > 0) setReceivables(parsed.receivables);
+          if (Array.isArray(parsed.payables) && parsed.payables.length > 0) setPayables(parsed.payables);
+          if (Array.isArray(parsed.tasks) && parsed.tasks.length > 0) setTasks(parsed.tasks);
+          if (Array.isArray(parsed.memos) && parsed.memos.length > 0) setMemos(parsed.memos);
+          if (Array.isArray(parsed.goals) && parsed.goals.length > 0) setGoals(parsed.goals);
+          if (parsed.settings) setSettings(parsed.settings);
         }
+      } catch (e) {
+        console.error('Error loading offline store:', e);
+      }
+
+      if (offlineMode) {
+        dataLoadedUserIdRef.current = userId;
         setDbLoading(false);
         setIsLoaded(true);
+        setSecondaryLoaded(true);
         setSetupRequired(false);
         setDbError(null);
         return;
       }
 
-      // SWR (Stale-While-Revalidate) Cache retrieval
+      // SWR (Stale-While-Revalidate) Cache retrieval for settings
       const cachedSettingsRaw = localStorage.getItem(`ht_cached_settings_${userId}`);
       if (cachedSettingsRaw) {
         try {
           const cachedSettings = JSON.parse(cachedSettingsRaw);
           setSettings(cachedSettings);
-          // Render instantly using cached settings
-          setIsLoaded(true);
         } catch (e) {}
       }
 
       setDbLoading(true);
       setDbError(null);
       try {
-        // Query ONLY 5 core dashboard tables, with selective columns and range pagination limits
-        const [sRes, eRes, rRes, payRes, setRes] = await Promise.all([
-          supabase.from('sales').select('id, items, customerName, paymentMethod, date, notes, grossSale, cost, profit').eq('userId', userId).order('date', { ascending: false }).range(0, 100),
-          supabase.from('expenses').select('id, name, category, amount, paymentMethod, date, description').eq('userId', userId).order('date', { ascending: false }).range(0, 100),
-          supabase.from('receivables').select('id, customer, phone, amount, dueDate, status').eq('userId', userId).range(0, 100),
-          supabase.from('payables').select('id, supplier, amount, dueDate, status').eq('userId', userId).range(0, 100),
+        // Query all user tables atomically
+        const [pRes, sRes, eRes, rRes, payRes, tRes, mRes, gRes, setRes] = await Promise.all([
+          supabase.from('products').select('*').eq('userId', userId).limit(500),
+          supabase.from('sales').select('*').eq('userId', userId).order('date', { ascending: false }).limit(500),
+          supabase.from('expenses').select('*').eq('userId', userId).order('date', { ascending: false }).limit(500),
+          supabase.from('receivables').select('*').eq('userId', userId).limit(500),
+          supabase.from('payables').select('*').eq('userId', userId).limit(500),
+          supabase.from('tasks').select('*').eq('userId', userId).limit(500),
+          supabase.from('memos').select('*').eq('userId', userId).limit(500),
+          supabase.from('goals').select('*').eq('userId', userId).limit(500),
           supabase.from('business_settings').select('*').eq('userId', userId).maybeSingle()
         ]);
 
-        const errors = [sRes.error, eRes.error, rRes.error, payRes.error, setRes.error].filter(Boolean);
-        const missingTableError = errors.find(e => 
+        const errors = [pRes.error, sRes.error, eRes.error, rRes.error, payRes.error, tRes.error, mRes.error, gRes.error, setRes.error].filter(Boolean);
+        const missingTableError = errors.find((e: any) => 
           e.code === '42P01' || 
           e.message?.includes('relation') || 
           e.message?.includes('schema cache') || 
@@ -720,8 +721,13 @@ export function AppContent() {
           return;
         }
 
-        if (!setRes.data) {
-          // New user setup required - start completely blank
+        const hasAnyData = (pRes.data && pRes.data.length > 0) || 
+                           (sRes.data && sRes.data.length > 0) || 
+                           (eRes.data && eRes.data.length > 0) || 
+                           setRes.data;
+
+        if (!hasAnyData && !localStorage.getItem(`ht_offline_store_${userId}`)) {
+          // Completely new account
           setSetupRequired(true);
           setProducts([]);
           setSales([]);
@@ -733,71 +739,45 @@ export function AppContent() {
           setGoals([]);
         } else {
           setSetupRequired(false);
-          setSales(sRes.data || []);
-          setExpenses(eRes.data || []);
-          setReceivables(rRes.data || []);
-          setPayables(payRes.data || []);
-          
-          const dbSettings = setRes.data || {};
-          const storageKey = `habesha_tracker_preferred_accounts_${userId}`;
-          const localPrefsRaw = localStorage.getItem(storageKey);
-          let mergedSettings = { ...dbSettings };
-          if (localPrefsRaw) {
-            try {
-              const localPrefs = JSON.parse(localPrefsRaw);
-              mergedSettings = { ...mergedSettings, ...localPrefs };
-            } catch (e) {
-              console.error('Error parsing local storage preferences', e);
+          if (pRes.data) setProducts(pRes.data);
+          if (sRes.data) setSales(sRes.data);
+          if (eRes.data) setExpenses(eRes.data);
+          if (rRes.data) setReceivables(rRes.data);
+          if (payRes.data) setPayables(payRes.data);
+          if (tRes.data) setTasks(tRes.data);
+          if (mRes.data) setMemos(mRes.data);
+          if (gRes.data) setGoals(gRes.data);
+
+          if (setRes.data) {
+            const dbSettings = setRes.data || {};
+            const storageKey = `habesha_tracker_preferred_accounts_${userId}`;
+            const localPrefsRaw = localStorage.getItem(storageKey);
+            let mergedSettings = { ...dbSettings };
+            if (localPrefsRaw) {
+              try {
+                const localPrefs = JSON.parse(localPrefsRaw);
+                mergedSettings = { ...mergedSettings, ...localPrefs };
+              } catch (e) {
+                console.error('Error parsing local storage preferences', e);
+              }
             }
+            setSettings(mergedSettings as any);
+            localStorage.setItem(`ht_cached_settings_${userId}`, JSON.stringify(mergedSettings));
           }
-          setSettings(mergedSettings as any);
-          // Update SWR cache
-          localStorage.setItem(`ht_cached_settings_${userId}`, JSON.stringify(mergedSettings));
         }
+        dataLoadedUserIdRef.current = userId;
+        setSecondaryLoaded(true);
       } catch (err) {
         console.error('Error loading core data from Supabase:', err);
-        addToast('Error synchronizing with Supabase database. Operating in local mode.', 'warning');
+        dataLoadedUserIdRef.current = userId;
       } finally {
         setDbLoading(false);
         setIsLoaded(true);
       }
     };
 
-    loadCoreUserData();
+    loadUserData();
   }, [userId, offlineMode]);
-
-  // Background deferred lazy load of secondary tables (products, tasks, memos, goals)
-  useEffect(() => {
-    if (!userId || !isLoaded || offlineMode || secondaryLoaded) return;
-
-    const loadSecondaryData = async () => {
-      try {
-        // Fetch secondary tables with specified columns and range limits
-        const [pRes, tRes, mRes, gRes] = await Promise.all([
-          supabase.from('products').select('id, nameEn, nameAm, category, sku, unit, purchasePrice, sellingPrice, currentStock, minStock, supplier, description').eq('userId', userId).range(0, 150),
-          supabase.from('tasks').select('id, text, completed').eq('userId', userId).range(0, 100),
-          supabase.from('memos').select('id, title, content, isPinned, date').eq('userId', userId).range(0, 100),
-          supabase.from('goals').select('id, text, completed').eq('userId', userId).range(0, 100)
-        ]);
-
-        if (pRes.data) setProducts(pRes.data);
-        if (tRes.data) setTasks(tRes.data);
-        if (mRes.data) setMemos(mRes.data);
-        if (gRes.data) setGoals(gRes.data);
-
-        setSecondaryLoaded(true);
-      } catch (e) {
-        console.error('Failed to load secondary background user data:', e);
-      }
-    };
-
-    // Stagger loading by 200ms to allow First Contentful Paint and page entrance transitions to complete at 60FPS
-    const timeout = setTimeout(() => {
-      loadSecondaryData();
-    }, 200);
-
-    return () => clearTimeout(timeout);
-  }, [userId, isLoaded, offlineMode, secondaryLoaded]);
 
   // QuickAction bridge
   const [quickActionState, setQuickActionState] = useState<{ type: string; itemId?: string } | null>(null);
@@ -942,14 +922,14 @@ export function AppContent() {
 
   // Synchronize lists to Supabase
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('products').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = products.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('products').delete().in('id', toDelete);
           }
@@ -998,14 +978,14 @@ export function AppContent() {
   }, [products, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('sales').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = sales.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('sales').delete().in('id', toDelete);
           }
@@ -1034,14 +1014,14 @@ export function AppContent() {
   }, [sales, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('expenses').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = expenses.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('expenses').delete().in('id', toDelete);
           }
@@ -1068,14 +1048,14 @@ export function AppContent() {
   }, [expenses, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('receivables').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = receivables.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('receivables').delete().in('id', toDelete);
           }
@@ -1101,14 +1081,14 @@ export function AppContent() {
   }, [receivables, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('payables').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = payables.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('payables').delete().in('id', toDelete);
           }
@@ -1133,14 +1113,14 @@ export function AppContent() {
   }, [payables, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('tasks').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = tasks.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('tasks').delete().in('id', toDelete);
           }
@@ -1163,14 +1143,14 @@ export function AppContent() {
   }, [tasks, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('memos').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = memos.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('memos').delete().in('id', toDelete);
           }
@@ -1195,14 +1175,14 @@ export function AppContent() {
   }, [memos, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const { data: dbData } = await supabase.from('goals').select('id').eq('userId', userId);
         if (dbData) {
-          const dbIds = dbData.map(d => d.id);
+          const dbIds = dbData.map((d: any) => d.id);
           const currentIds = goals.map(c => c.id);
-          const toDelete = dbIds.filter(id => !currentIds.includes(id));
+          const toDelete = dbIds.filter((id: string) => !currentIds.includes(id));
           if (toDelete.length > 0) {
             await supabase.from('goals').delete().in('id', toDelete);
           }
@@ -1225,7 +1205,7 @@ export function AppContent() {
   }, [goals, isLoaded, userId, offlineMode, isResetting]);
 
   useEffect(() => {
-    if (!isLoaded || !userId || offlineMode || isResetting) return;
+    if (!isLoaded || !userId || dataLoadedUserIdRef.current !== userId || offlineMode || isResetting) return;
     const sync = async () => {
       try {
         const fullPayload: any = {
@@ -1284,7 +1264,7 @@ export function AppContent() {
     } else {
       root.classList.remove('dark');
     }
-  }, [settings]);
+  }, [settings, isLoaded, userId, offlineMode, isResetting]);
 
   // Toast adder helper
   const addToast = (text: string, type: 'info' | 'warning' | 'success' = 'info') => {
