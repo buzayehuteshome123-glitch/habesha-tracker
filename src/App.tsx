@@ -877,31 +877,33 @@ export function AppContent() {
   const bankBalance = useMemo(() => {
     let salesBank = 0;
     sales.forEach(s => {
-      if (s.paymentMethod !== 'Cash') {
+      const pm = (s.paymentMethod || '').toLowerCase();
+      if (!pm.includes('cash') && pm !== '') {
         salesBank += s.grossSale;
       }
     });
 
     let expensesBank = 0;
     expenses.forEach(e => {
-      if (e.paymentMethod !== 'Cash') {
+      const pm = (e.paymentMethod || '').toLowerCase();
+      if (!pm.includes('cash') && pm !== '') {
         expensesBank += e.amount;
       }
     });
 
-    const bankAdjust = settings.bankAdjust || 0;
-    const startingCBE = settings.startingCBE ?? 0;
-    const startingTelebirr = settings.startingTelebirr ?? 0;
-    const startingEBirr = settings.startingEBirr ?? 0;
-    const startingSinqee = settings.startingSinqee ?? 0;
-    const startingOther = settings.startingOther ?? 0;
+    const bankAdjust = Number(settings.bankAdjust) || 0;
+    const startingCBE = Number(settings.startingCBE) || 0;
+    const startingTelebirr = Number(settings.startingTelebirr) || 0;
+    const startingEBirr = Number(settings.startingEBirr) || 0;
+    const startingSinqee = Number(settings.startingSinqee) || 0;
+    const startingOther = Number(settings.startingOther) || 0;
 
     const totalStartingBank = 
-      (settings.preferCBE ? startingCBE : 0) +
-      (settings.preferTelebirr ? startingTelebirr : 0) +
-      (settings.preferEBirr ? startingEBirr : 0) +
-      (settings.preferSinqee ? startingSinqee : 0) +
-      (settings.preferOther ? startingOther : 0);
+      (settings.preferCBE !== false ? startingCBE : 0) +
+      (settings.preferTelebirr !== false ? startingTelebirr : 0) +
+      (settings.preferEBirr !== false ? startingEBirr : 0) +
+      (settings.preferSinqee !== false ? startingSinqee : 0) +
+      (settings.preferOther === true ? startingOther : 0);
 
     return totalStartingBank + salesBank - expensesBank + bankAdjust;
   }, [sales, expenses, settings]);
@@ -909,20 +911,22 @@ export function AppContent() {
   const cashOnHand = useMemo(() => {
     let salesCash = 0;
     sales.forEach(s => {
-      if (s.paymentMethod === 'Cash') {
+      const pm = (s.paymentMethod || '').toLowerCase();
+      if (pm.includes('cash') || pm === '') {
         salesCash += s.grossSale;
       }
     });
 
     let expensesCash = 0;
     expenses.forEach(e => {
-      if (e.paymentMethod === 'Cash') {
+      const pm = (e.paymentMethod || '').toLowerCase();
+      if (pm.includes('cash') || pm === '') {
         expensesCash += e.amount;
       }
     });
 
-    const cashAdjust = settings.cashAdjust || 0;
-    const startingCash = settings.startingCash ?? 0;
+    const cashAdjust = Number(settings.cashAdjust) || 0;
+    const startingCash = Number(settings.startingCash) || 0;
 
     return startingCash + salesCash - expensesCash + cashAdjust;
   }, [sales, expenses, settings]);

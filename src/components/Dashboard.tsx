@@ -124,7 +124,7 @@ export default function Dashboard({
   const ebirrCurrent = startingEBirr + ebirrSales - ebirrExp;
   const sinqeeCurrent = startingSinqee + sinqeeSales - sinqeeExp;
   const otherCurrent = startingOther + otherSales - otherExp;
-  const cashCurrent = startingCash + cashSales - cashExp;
+  const cashCurrent = startingCash + cashSales - cashExp + (settings.cashAdjust || 0);
 
   const handleRemoveAccount = (key: 'preferCBE' | 'preferTelebirr' | 'preferEBirr' | 'preferSinqee' | 'preferOther') => {
     if (!setSettings) return;
@@ -538,6 +538,33 @@ export default function Dashboard({
               </span>
               <span className="text-[9px] text-slate-400 block mt-0.5">
                 Start: {startingTelebirr.toLocaleString()}
+              </span>
+            </div>
+          )}
+
+          {preferEBirr && (
+            <div className="relative group bg-slate-50/50 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-800/60 p-3.5 rounded-xl text-center">
+              <button 
+                onClick={() => handleRemoveAccount('preferEBirr')}
+                className="absolute top-1.5 right-1.5 p-1 rounded-full text-slate-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                title={isAmharic ? 'አካውንቱን አጥፋ' : 'Remove account'}
+              >
+                <X className="w-3 h-3" />
+              </button>
+              <div className="flex justify-center mb-1.5">
+                <img 
+                  src={BANK_LOGOS.EBirr} 
+                  alt="E-Birr" 
+                  className="w-9 h-9 rounded-full object-cover border border-slate-200 dark:border-slate-800 shadow-xs"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold block truncate">E-Birr (ኢ-ብር)</span>
+              <span className="text-xs font-mono font-bold text-slate-800 dark:text-slate-200 mt-1.5 block">
+                {ebirrCurrent.toLocaleString()} ETB
+              </span>
+              <span className="text-[9px] text-slate-400 block mt-0.5">
+                Start: {startingEBirr.toLocaleString()}
               </span>
             </div>
           )}

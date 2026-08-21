@@ -63,12 +63,12 @@ export default function Settings({
   const [isErasing, setIsErasing] = useState(false);
 
   // Form Fields mapped to settings state
-  const [businessName, setBusinessName] = useState(settings.businessName);
+  const [businessName, setBusinessName] = useState(settings.businessName || '');
   const [ownerName, setOwnerName] = useState(settings.ownerName || '');
-  const [address, setAddress] = useState(settings.address);
-  const [phone, setPhone] = useState(settings.phone);
-  const [email, setEmail] = useState(settings.email);
-  const [currency, setCurrency] = useState(settings.currency);
+  const [address, setAddress] = useState(settings.address || '');
+  const [phone, setPhone] = useState(settings.phone || '');
+  const [email, setEmail] = useState(settings.email || '');
+  const [currency, setCurrency] = useState(settings.currency || 'ETB');
 
   const [preferCBE, setPreferCBE] = useState(settings.preferCBE !== false);
   const [preferTelebirr, setPreferTelebirr] = useState(settings.preferTelebirr !== false);
@@ -83,6 +83,29 @@ export default function Settings({
   const [startingOther, setStartingOther] = useState((settings.startingOther ?? 0).toString());
   const [startingCash, setStartingCash] = useState((settings.startingCash ?? 0).toString());
 
+  // Keep form fields synchronized when settings prop updates (e.g. from Supabase or reset)
+  React.useEffect(() => {
+    setBusinessName(settings.businessName || '');
+    setOwnerName(settings.ownerName || '');
+    setAddress(settings.address || '');
+    setPhone(settings.phone || '');
+    setEmail(settings.email || '');
+    setCurrency(settings.currency || 'ETB');
+
+    setPreferCBE(settings.preferCBE !== false);
+    setPreferTelebirr(settings.preferTelebirr !== false);
+    setPreferEBirr(settings.preferEBirr !== false);
+    setPreferSinqee(settings.preferSinqee !== false);
+    setPreferOther(settings.preferOther === true);
+
+    setStartingCBE((settings.startingCBE ?? 0).toString());
+    setStartingTelebirr((settings.startingTelebirr ?? 0).toString());
+    setStartingEBirr((settings.startingEBirr ?? 0).toString());
+    setStartingSinqee((settings.startingSinqee ?? 0).toString());
+    setStartingOther((settings.startingOther ?? 0).toString());
+    setStartingCash((settings.startingCash ?? 0).toString());
+  }, [settings]);
+
   const handleSaveDetails = (e: React.FormEvent) => {
     e.preventDefault();
     const cbeAmt = preferCBE ? parseFloat(startingCBE) || 0 : 0;
@@ -91,8 +114,6 @@ export default function Settings({
     const sinqeeAmt = preferSinqee ? parseFloat(startingSinqee) || 0 : 0;
     const otherAmt = preferOther ? parseFloat(startingOther) || 0 : 0;
     const cashAmt = parseFloat(startingCash) || 0;
-
-    const bankAmt = cbeAmt + telebirrAmt + ebirrAmt + sinqeeAmt + otherAmt;
 
     const storageKey = settings.userId 
       ? `habesha_tracker_preferred_accounts_${settings.userId}` 
@@ -120,8 +141,8 @@ export default function Settings({
       phone,
       email,
       currency,
-      bankAdjust: bankAmt - 320000,
-      cashAdjust: cashAmt - 65000,
+      bankAdjust: settings.bankAdjust || 0,
+      cashAdjust: settings.cashAdjust || 0,
       preferCBE,
       preferTelebirr,
       preferEBirr,
