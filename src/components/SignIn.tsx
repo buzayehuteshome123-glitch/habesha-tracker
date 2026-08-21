@@ -270,8 +270,7 @@ export default function SignIn({
           logger.info('auth', 'User authenticated successfully', { email, userId: data.user.id });
         });
 
-        // Redirect the user to the Home page ("/")
-        window.history.pushState({}, '', '/');
+        // Redirect the user to the Dashboard page ("/dashboard")
         onSuccess();
       }
     } catch (err: any) {

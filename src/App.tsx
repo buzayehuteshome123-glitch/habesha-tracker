@@ -68,8 +68,9 @@ interface Toast {
 }
 
 const DEFAULT_SETTINGS: BusinessSettings = {
-  businessName: 'My Habesha Business',
-  address: 'Addis Ababa, Ethiopia',
+  businessName: '',
+  ownerName: '',
+  address: '',
   phone: '',
   email: '',
   currency: 'ETB',
@@ -119,8 +120,26 @@ export function AppContent() {
   });
 
   // Track database loading and user identification
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(() => {
+    try {
+      const sessionRaw = localStorage.getItem('supabase_auth_session');
+      if (sessionRaw) {
+        const parsed = JSON.parse(sessionRaw);
+        if (parsed?.user?.id) return parsed.user.id;
+      }
+    } catch (e) {}
+    return null;
+  });
+  const [userEmail, setUserEmail] = useState<string>(() => {
+    try {
+      const sessionRaw = localStorage.getItem('supabase_auth_session');
+      if (sessionRaw) {
+        const parsed = JSON.parse(sessionRaw);
+        if (parsed?.user?.email) return parsed.user.email;
+      }
+    } catch (e) {}
+    return '';
+  });
   const [setupRequired, setSetupRequired] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [dbLoading, setDbLoading] = useState(false);
@@ -207,6 +226,18 @@ export function AppContent() {
       ) {
         return 'reset-password';
       }
+      if (window.location.pathname === '/login') return 'signin';
+      if (window.location.pathname === '/signup') return 'signup';
+      if (window.location.pathname.startsWith('/dashboard') || 
+          window.location.pathname.startsWith('/inventory') || 
+          window.location.pathname.startsWith('/sales') || 
+          window.location.pathname.startsWith('/expenses') || 
+          window.location.pathname.startsWith('/loans') || 
+          window.location.pathname.startsWith('/tasks') || 
+          window.location.pathname.startsWith('/reports') || 
+          window.location.pathname.startsWith('/settings')) {
+        return 'app';
+      }
     } catch (e) {
       // ignore
     }
@@ -214,38 +245,6 @@ export function AppContent() {
   });
   const [signupPrefillEmail, setSignupPrefillEmail] = useState<string>('');
   const [signupSuccess, setSignupSuccess] = useState<boolean>(false);
-
-  // Helper to seed a new user's Supabase database with sample data
-  const seedDatabase = async (uid: string) => {
-    try {
-      const initialSettings = {
-        userId: uid,
-        businessName: 'Habesha Grains & Tech ERP',
-        address: 'Merkato Ward 3, Addis Ababa, Ethiopia',
-        phone: '+251 911 234567',
-        email: 'contact@habeshagrains.et',
-        currency: 'ETB',
-        language: 'en',
-        theme: 'dark',
-        bankAdjust: 0,
-        cashAdjust: 0
-      };
-      await supabase.from('business_settings').upsert(initialSettings);
-
-      await Promise.all([
-        supabase.from('products').upsert(INITIAL_PRODUCTS.map(p => ({ ...p, userId: uid }))),
-        supabase.from('sales').upsert(INITIAL_SALES.map(s => ({ ...s, userId: uid }))),
-        supabase.from('expenses').upsert(INITIAL_EXPENSES.map(e => ({ ...e, userId: uid }))),
-        supabase.from('receivables').upsert(INITIAL_RECEIVABLES.map(r => ({ ...r, userId: uid }))),
-        supabase.from('payables').upsert(INITIAL_PAYABLES.map(p => ({ ...p, userId: uid }))),
-        supabase.from('tasks').upsert(INITIAL_TASKS.map(t => ({ ...t, userId: uid }))),
-        supabase.from('memos').upsert(INITIAL_MEMOS.map(m => ({ ...m, userId: uid }))),
-        supabase.from('goals').upsert(INITIAL_GOALS.map(g => ({ ...g, userId: uid })))
-      ]);
-    } catch (error) {
-      console.error('Failed to seed database:', error);
-    }
-  };
 
   // Dedicated Logout Handler that completely purges state and caches
   const handleLogout = async () => {
@@ -407,7 +406,6 @@ export function AppContent() {
         setAuthScreen('app');
         setOfflineMode(false);
       } else {
-        clearAllLocalState();
         setUserId(null);
         setUserEmail('');
         setAuthScreen(current => {
@@ -434,17 +432,12 @@ export function AppContent() {
           }
           return current;
         });
-      } else {
+      } else if (event === 'SIGNED_OUT') {
         clearAllLocalState();
         setUserId(null);
         setUserEmail('');
         setOfflineMode(false);
-        setAuthScreen(current => {
-          if (current === 'app') {
-            return 'landing';
-          }
-          return current;
-        });
+        setAuthScreen('landing');
       }
     });
 
@@ -1446,91 +1439,6 @@ export function AppContent() {
       return <Navigate to="/login" replace />;
     }
 
-    if (dbError && !offlineMode) {
-      return (
-        <DatabaseSetupGuide 
-          errorMessage={dbError}
-          onRefresh={async () => {
-            setDbLoading(true);
-            try {
-              const [sRes, eRes, rRes, payRes, setRes] = await Promise.all([
-                supabase.from('sales').select('id, items, customerName, paymentMethod, date, notes, grossSale, cost, profit').range(0, 100),
-                supabase.from('expenses').select('id, name, category, amount, paymentMethod, date, description').range(0, 100),
-                supabase.from('receivables').select('id, customer, phone, amount, dueDate, status').range(0, 100),
-                supabase.from('payables').select('id, supplier, amount, dueDate, status').range(0, 100),
-                supabase.from('business_settings').select('*').maybeSingle()
-              ]);
-
-              const errors = [sRes.error, eRes.error, rRes.error, payRes.error, setRes.error].filter(Boolean);
-              const missingTableError = errors.find(e => 
-                e.code === '42P01' || 
-                e.message?.includes('relation') || 
-                e.message?.includes('schema cache') || 
-                e.message?.includes('Could not find the table') ||
-                (e.message?.includes('does not exist') && !e.message?.includes('column'))
-              );
-
-              if (missingTableError) {
-                setDbError(missingTableError.message || 'Database tables are missing.');
-              } else {
-                setDbError(null);
-                if (!setRes.data) {
-                  setSetupRequired(true);
-                  setSales([]);
-                  setExpenses([]);
-                  setReceivables([]);
-                  setPayables([]);
-                } else {
-                  setSetupRequired(false);
-                  setSales(sRes.data || []);
-                  setExpenses(eRes.data || []);
-                  setReceivables(rRes.data || []);
-                  setPayables(payRes.data || []);
-                  const dbSettings = setRes.data || {};
-                  const storageKey = `habesha_tracker_preferred_accounts_${userId}`;
-                  const localPrefsRaw = localStorage.getItem(storageKey);
-                  let mergedSettings = { ...dbSettings };
-                  if (localPrefsRaw) {
-                    try {
-                      const localPrefs = JSON.parse(localPrefsRaw);
-                      mergedSettings = { ...mergedSettings, ...localPrefs };
-                    } catch (e) {
-                      console.error('Error parsing local storage preferences', e);
-                    }
-                  }
-                  setSettings(mergedSettings as any);
-                }
-              }
-            } catch (err) {
-              console.error('Refresh error:', err);
-            } finally {
-              setDbLoading(false);
-              setIsLoaded(true);
-            }
-          }}
-          onContinueOffline={() => {
-            setOfflineMode(true);
-            setDbError(null);
-          }}
-        />
-      );
-    }
-
-    if (setupRequired) {
-      return (
-        <ProfileSetup 
-          userId={userId || ''} 
-          userEmail={userEmail}
-          onComplete={(newSettings) => {
-            setSettings(newSettings);
-            setSetupRequired(false);
-            addToast(newSettings.language === 'am' ? 'መገለጫዎ በተሳካ ሁኔታ ተዋቅሯል!' : 'Profile setup completed successfully!', 'success');
-          }}
-          onLogout={handleLogout}
-        />
-      );
-    }
-
     return <>{children}</>;
   }
 
@@ -1805,15 +1713,18 @@ export function AppContent() {
     <>
       <Suspense fallback={<PageSkeleton />}>
         <Routes>
-        {/* Public SaaS Pages */}
+        {/* Public Landing & SaaS Marketing Pages */}
         <Route path="/" element={
           <LandingPage 
             onEnterApp={() => {
-              setOfflineMode(true);
-              setUserId('demo-offline-user');
-              setAuthScreen('app');
-              setCurrentTab('dashboard');
-              navigate('/dashboard');
+              if (userId) {
+                setAuthScreen('app');
+                setCurrentTab('dashboard');
+                navigate('/dashboard');
+              } else {
+                setAuthScreen('signin');
+                navigate('/login');
+              }
             }} 
             onLoginClick={() => {
               setSignupPrefillEmail('');
@@ -1831,6 +1742,7 @@ export function AppContent() {
             setSettings={setSettings} 
           />
         } />
+        <Route path="/landing" element={<Navigate to="/" replace />} />
         <Route path="/features" element={<FeaturesPage settings={settings} setSettings={setSettings} />} />
         <Route path="/about" element={<AboutPage settings={settings} setSettings={setSettings} />} />
         <Route path="/contact" element={<ContactPage settings={settings} setSettings={setSettings} />} />

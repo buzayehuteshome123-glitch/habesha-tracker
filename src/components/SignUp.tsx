@@ -117,23 +117,9 @@ export default function SignUp({ onSuccess, onSwitchToSignIn, onBack, settings }
         import('../lib/logger').then(({ logger }) => {
           logger.info('auth', 'User successfully registered', { email, userId: data?.user?.id });
         });
-        // If a session exists (auto-login is enabled on Supabase project), sign out to prevent auto-login
-        if (data?.session) {
-          await supabase.auth.signOut();
-        }
-
-        // Set email and success params in query string as a fallback
-        try {
-          const url = new URL(window.location.href);
-          url.searchParams.set('signup_email', email);
-          url.searchParams.set('signup_success', 'true');
-          window.history.pushState({}, '', url.toString());
-        } catch (e) {
-          // Ignore state manipulation errors in sandboxed iframes
-        }
-
-        // Redirect the user to the Sign In page with parameters
-        onSwitchToSignIn(email, true);
+        
+        // Immediate entry to Dashboard without verification wait
+        onSuccess();
       }
     } catch (err: any) {
       setErrorMsg(getFriendlyErrorMessage(err));
