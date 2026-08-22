@@ -166,18 +166,47 @@ export default function Dashboard({
   const todayStr = new Date().toISOString().split('T')[0];
   
   const todaySalesList = sales.filter(s => {
-    const saleDateStr = new Date(s.date).toISOString().split('T')[0];
+    const saleDateStr = s.date.includes('T') ? s.date.split('T')[0] : s.date.slice(0, 10);
     return saleDateStr === todayStr;
   });
 
-  const todaySalesTotal = todaySalesList.reduce((acc, curr) => acc + curr.grossSale, 0);
-  const todayProfitTotal = todaySalesList.reduce((acc, curr) => acc + curr.profit, 0);
+  const todaySalesTotal = todaySalesList.reduce((acc, curr) => acc + (curr.grossSale || 0), 0);
+  const todayProfitTotal = todaySalesList.reduce((acc, curr) => acc + (curr.profit || 0), 0);
 
-  const todayExpensesTotal = expenses
-    .filter(e => e.date === todayStr)
-    .reduce((acc, curr) => acc + curr.amount, 0);
+  const todayExpensesList = expenses.filter(e => {
+    const expDateStr = e.date.includes('T') ? e.date.split('T')[0] : e.date.slice(0, 10);
+    return expDateStr === todayStr;
+  });
 
-  const todayNetProfit = todayProfitTotal - todayExpensesTotal;
+  // Separate cash expenses vs bank/digital expenses
+  const todayCashExpenses = todayExpensesList
+    .filter(e => {
+      const pm = (e.paymentMethod || '').toLowerCase();
+      return (pm.includes('cash') || pm === '') && !e.excludeFromDailyProfit;
+    })
+    .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+  const todayBankExpenses = todayExpensesList
+    .filter(e => {
+      const pm = (e.paymentMethod || '').toLowerCase();
+      return (!pm.includes('cash') && pm !== '') || e.excludeFromDailyProfit === true;
+    })
+    .reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+  const todayExpensesTotal = todayExpensesList.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+
+  // Bank expenses are paid directly from Bank Accounts (CBE, Telebirr, etc.)
+  // They are deducted from Bank Balances and do NOT turn daily sales profit negative.
+  let todayDisplayProfit = todayProfitTotal;
+  if (settings.dailyProfitMode === 'cash_net') {
+    todayDisplayProfit = todayProfitTotal - todayCashExpenses;
+  } else if (settings.dailyProfitMode === 'full_net' && settings.deductBankExpensesFromProfit === true) {
+    todayDisplayProfit = todayProfitTotal - todayExpensesTotal;
+  } else {
+    // Default: Today's Sales Trading Profit
+    todayDisplayProfit = todayProfitTotal;
+  }
+  const todayNetProfit = todayDisplayProfit;
 
   // 2. Real-time Stock Alerts
   const outOfStockItems = products.filter(p => p.currentStock === 0);
@@ -377,21 +406,38 @@ export default function Dashboard({
           </div>
         </div>
 
-        {/* Today's Net Profit Card (Stunning Indigo Accent) */}
-        <div className="bg-indigo-600 dark:bg-indigo-700 p-5 rounded-2xl shadow-lg border border-indigo-700 transition hover:shadow-xl">
+        {/* Today's Sales Profit Card (Stunning Indigo/Emerald Gradient Theme) */}
+        <div className="bg-gradient-to-br from-indigo-600 to-indigo-700 dark:from-indigo-700 dark:to-indigo-800 p-5 rounded-2xl shadow-lg border border-indigo-500/30 transition hover:shadow-xl relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <p className="text-indigo-200 text-xs font-bold uppercase tracking-wider mb-1">{t.todayProfit}</p>
-            <div className="w-9 h-9 bg-indigo-500/20 text-white rounded-xl flex items-center justify-center">
+            <div className="flex items-center gap-1.5">
+              <p className="text-indigo-100 text-xs font-bold uppercase tracking-wider">{t.todayProfit}</p>
+              <span className="bg-indigo-500/40 text-white text-[9px] px-1.5 py-0.5 rounded font-mono font-medium">
+                {isAmharic ? 'የሽያጭ ትርፍ' : 'Sales Margin'}
+              </span>
+            </div>
+            <div className="w-9 h-9 bg-indigo-500/30 text-white rounded-xl flex items-center justify-center">
               <Briefcase className="w-4 h-4" />
             </div>
           </div>
-          <div className="mt-4">
-            <h3 className="text-2xl font-black text-white font-sans">
-              {todayNetProfit.toLocaleString()} <span className="text-xs text-indigo-200">{settings.currency}</span>
+          <div className="mt-3">
+            <h3 className="text-2xl font-black text-white font-sans tracking-tight">
+              {todayNetProfit.toLocaleString()} <span className="text-xs text-indigo-200 font-normal">{settings.currency}</span>
             </h3>
-            <p className="text-indigo-200 text-xs mt-2 italic">
-              Sales: {todaySalesTotal.toLocaleString()} {settings.currency}
-            </p>
+            
+            <div className="mt-2.5 pt-2 border-t border-indigo-500/40 flex flex-wrap items-center justify-between gap-1 text-[11px] text-indigo-100">
+              <span>{isAmharic ? 'ሽያጭ' : 'Sales'}: <strong className="font-mono text-white">{todaySalesTotal.toLocaleString()}</strong></span>
+              {todayCashExpenses > 0 && (
+                <span>{isAmharic ? 'የጥሬ ወጪ' : 'Cash Exp'}: <strong className="font-mono text-amber-200">-{todayCashExpenses.toLocaleString()}</strong></span>
+              )}
+            </div>
+
+            {todayBankExpenses > 0 && (
+              <div className="mt-1.5 flex items-center gap-1 text-[10px] text-indigo-200 bg-indigo-800/50 px-2 py-0.5 rounded-md">
+                <span>🏦 {isAmharic ? 'በባንክ የተከፈለ' : 'Bank Paid'}:</span>
+                <strong className="font-mono text-emerald-200">{todayBankExpenses.toLocaleString()} {settings.currency}</strong>
+                <span className="text-[9px] text-indigo-300">({isAmharic ? 'ከባንክ ቀሪ' : 'from bank'})</span>
+              </div>
+            )}
           </div>
         </div>
 

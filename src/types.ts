@@ -42,6 +42,7 @@ export interface Expense {
   paymentMethod: string;
   date: string;
   description: string;
+  excludeFromDailyProfit?: boolean;
 }
 
 export interface Receivable {
@@ -111,6 +112,8 @@ export interface BusinessSettings {
   startingSinqee?: number;
   startingOther?: number;
   startingCash?: number;
+  deductBankExpensesFromProfit?: boolean;
+  dailyProfitMode?: 'sales_profit' | 'cash_net' | 'full_net';
 }
 
 export type ERPTab =

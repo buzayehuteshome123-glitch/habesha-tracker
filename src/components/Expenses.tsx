@@ -59,6 +59,7 @@ export default function Expenses({
   const [paymentMethod, setPaymentMethod] = useState<string>('Cash');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [description, setDescription] = useState('');
+  const [excludeFromDailyProfit, setExcludeFromDailyProfit] = useState(true);
 
   // Search/Filters
   const [filterSearch, setFilterSearch] = useState('');
@@ -84,6 +85,7 @@ export default function Expenses({
     setPaymentMethod('Cash');
     setDate(new Date().toISOString().slice(0, 10));
     setDescription('');
+    setExcludeFromDailyProfit(true);
     setIsModalOpen(true);
   };
 
@@ -95,6 +97,7 @@ export default function Expenses({
     setPaymentMethod(exp.paymentMethod);
     setDate(exp.date);
     setDescription(exp.description);
+    setExcludeFromDailyProfit(exp.excludeFromDailyProfit !== false);
     setIsModalOpen(true);
   };
 
@@ -106,11 +109,22 @@ export default function Expenses({
       return;
     }
 
+    const isBank = paymentMethod.toLowerCase() !== 'cash' && paymentMethod !== '';
+
     if (editingExpense) {
       // Edit
       const updated = expenses.map(exp => {
         if (exp.id === editingExpense.id) {
-          return { ...exp, name, category, amount, paymentMethod, date, description };
+          return { 
+            ...exp, 
+            name, 
+            category, 
+            amount, 
+            paymentMethod, 
+            date, 
+            description,
+            excludeFromDailyProfit: isBank ? excludeFromDailyProfit : false
+          };
         }
         return exp;
       });
@@ -125,7 +139,8 @@ export default function Expenses({
         amount,
         paymentMethod,
         date,
-        description
+        description,
+        excludeFromDailyProfit: isBank ? excludeFromDailyProfit : false
       };
       setExpenses([newExp, ...expenses]);
       addToast(isAmharic ? 'ወጪ በተሳካ ሁኔታ ተመዝግቧል!' : 'Expense logged successfully!', 'success');
@@ -151,8 +166,25 @@ export default function Expenses({
   const todayStr = new Date().toISOString().slice(0, 10);
   const currentMonthStr = new Date().toISOString().slice(0, 7); // YYYY-MM
 
-  const todayExpensesSum = expenses
-    .filter(e => e.date === todayStr)
+  const todayExpensesList = expenses.filter(e => {
+    const eDate = e.date.includes('T') ? e.date.split('T')[0] : e.date.slice(0, 10);
+    return eDate === todayStr;
+  });
+
+  const todayExpensesSum = todayExpensesList.reduce((acc, curr) => acc + curr.amount, 0);
+
+  const todayCashExpensesSum = todayExpensesList
+    .filter(e => {
+      const pm = (e.paymentMethod || '').toLowerCase();
+      return pm.includes('cash') || pm === '';
+    })
+    .reduce((acc, curr) => acc + curr.amount, 0);
+
+  const todayBankExpensesSum = todayExpensesList
+    .filter(e => {
+      const pm = (e.paymentMethod || '').toLowerCase();
+      return !pm.includes('cash') && pm !== '';
+    })
     .reduce((acc, curr) => acc + curr.amount, 0);
 
   const monthlyExpensesSum = expenses
@@ -236,49 +268,64 @@ export default function Expenses({
       </div>
 
       {/* Top Cards (Metrics Panel) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         
-        {/* Today's Expenses */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+        {/* Today's Total Expenses */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
             <Calendar className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               {t.todayExpenses}
             </span>
-            <span className="text-xl font-bold font-mono text-slate-800 dark:text-white mt-1 block">
-              {todayExpensesSum.toLocaleString()} <span className="text-xs text-slate-400">{settings.currency}</span>
+            <span className="text-lg font-bold font-mono text-slate-800 dark:text-white mt-0.5 block">
+              {todayExpensesSum.toLocaleString()} <span className="text-xs text-slate-400 font-sans">{settings.currency}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Cash Drawer Expenses */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 bg-amber-50 dark:bg-amber-950/40 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+            <DollarSign className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              {isAmharic ? 'የዛሬ የጥሬ ገንዘብ ወጪ' : "Today's Cash Drawer Exp"}
+            </span>
+            <span className="text-lg font-bold font-mono text-amber-600 dark:text-amber-400 mt-0.5 block">
+              {todayCashExpensesSum.toLocaleString()} <span className="text-xs text-slate-400 font-sans">{settings.currency}</span>
+            </span>
+          </div>
+        </div>
+
+        {/* Bank Account Paid */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+            <CreditCard className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              {isAmharic ? 'የዛሬ የባንክ ወጪዎች' : "Today's Bank Paid"}
+            </span>
+            <span className="text-lg font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5 block">
+              {todayBankExpensesSum.toLocaleString()} <span className="text-xs text-slate-400 font-sans">{settings.currency}</span>
             </span>
           </div>
         </div>
 
         {/* Monthly Expenses */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
+        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex items-center gap-3.5">
+          <div className="w-11 h-11 bg-purple-50 dark:bg-purple-950/40 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
             <TrendingDown className="w-5 h-5" />
           </div>
           <div>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
               {t.monthlyExpenses}
             </span>
-            <span className="text-xl font-bold font-mono text-slate-800 dark:text-white mt-1 block">
-              {monthlyExpensesSum.toLocaleString()} <span className="text-xs text-slate-400">{settings.currency}</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Unique Categories Count */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 shadow-xs flex items-center gap-4 sm:col-span-2 md:col-span-1">
-          <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl flex items-center justify-center shrink-0">
-            <PieIcon className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Expense Streams
-            </span>
-            <span className="text-xl font-bold font-mono text-slate-800 dark:text-white mt-1 block">
-              {Object.keys(categoryAmounts).length} <span className="text-xs text-slate-400">active channels</span>
+            <span className="text-lg font-bold font-mono text-purple-600 dark:text-purple-400 mt-0.5 block">
+              {monthlyExpensesSum.toLocaleString()} <span className="text-xs text-slate-400 font-sans">{settings.currency}</span>
             </span>
           </div>
         </div>
@@ -433,9 +480,20 @@ export default function Expenses({
 
                     {/* Payment Method */}
                     <td className="px-5 py-3.5">
-                      <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                        {exp.paymentMethod}
-                      </span>
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className="text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+                          {exp.paymentMethod}
+                        </span>
+                        {exp.paymentMethod.toLowerCase() !== 'cash' && exp.paymentMethod !== '' ? (
+                          <span className="text-[8px] font-mono px-1.5 py-0.2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded">
+                            🏦 {isAmharic ? 'ከባንክ ሂሳብ' : 'Bank Balance'}
+                          </span>
+                        ) : (
+                          <span className="text-[8px] font-mono px-1.5 py-0.2 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded">
+                            💵 {isAmharic ? 'ከጥሬ ገንዘብ' : 'Cash Drawer'}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Date */}
@@ -599,6 +657,33 @@ export default function Expenses({
                 </div>
 
               </div>
+
+              {/* Bank Account Deduction Banner & Profit Protection Toggle */}
+              {paymentMethod.toLowerCase() !== 'cash' && paymentMethod !== '' && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 p-3 rounded-xl space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-base leading-none">🏦</span>
+                    <div className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
+                      <strong>{isAmharic ? 'የባንክ ሂሳብ ክፍያ' : 'Bank Account Disbursement'}:</strong>{' '}
+                      {isAmharic 
+                        ? `ይህ ${amount > 0 ? amount.toLocaleString() + ' ' + settings.currency : 'ወጪ'} ከ${paymentMethod} አካውንት ቀሪ ሂሳብ በቀጥታ ይቀነሳል። የዕለቱን የሽያጭ ትርፍ እንዳይቀንስ ይደረጋል።`
+                        : `This amount will be deducted directly from your ${paymentMethod} ledger balance and will NOT reduce Today's Store Sales Profit.`
+                      }
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer pt-1 border-t border-emerald-200/50 dark:border-emerald-800/40">
+                    <input
+                      type="checkbox"
+                      checked={excludeFromDailyProfit}
+                      onChange={(e) => setExcludeFromDailyProfit(e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5"
+                    />
+                    <span className="text-[11px] font-medium">
+                      {isAmharic ? 'ከዕለት የሽያጭ ትርፍ እንዳይቀነስ (ከባንክ ብቻ ይቀነስ)' : 'Do not deduct from Daily Sales Profit (Deduct from Bank Balance only)'}
+                    </span>
+                  </label>
+                </div>
+              )}
 
               {/* Description */}
               <div>
